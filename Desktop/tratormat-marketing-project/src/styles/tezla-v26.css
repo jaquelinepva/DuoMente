@@ -452,6 +452,11 @@ main:has(.dashboard-shell){max-width:none;padding:0;display:block}
 .ai-evidence{margin-top:14px;padding-left:18px;color:var(--muted-soft);line-height:1.8;font-size:12.5px}
 .source-note{display:block;margin-top:14px;color:var(--muted-soft);font-size:11px;font-family:var(--font-display)}
 
+/* ---------- Concept preview (illustrative, not live data) ---------- */
+.ai-command-card.is-concept{border:1px dashed var(--brass-dim);border-left:2px dashed var(--brass-dim);background:repeating-linear-gradient(135deg,var(--panel),var(--panel) 12px,var(--panel2) 12px,var(--panel2) 24px)}
+.concept-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:6px 12px;border:1px solid var(--brass-dim);border-radius:3px;background:var(--bg);color:var(--brass);font-size:10.5px;font-weight:600;letter-spacing:.03em;font-family:var(--font-display)}
+.ai-command-card.is-concept .ai-signal-grid strong{color:var(--muted-soft)}
+
 /* ---------- Operational live summary ---------- */
 .operational-live{margin:0 0 20px;border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px}
 .live-state{display:flex;align-items:center;gap:8px;margin-bottom:16px;color:var(--muted);font-size:12px;font-family:var(--font-display)}
