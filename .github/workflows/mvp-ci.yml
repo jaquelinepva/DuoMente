@@ -1,0 +1,49 @@
+name: MVP CI
+
+on:
+  pull_request:
+    paths:
+      - 'mvp/**'
+      - '.github/workflows/mvp-ci.yml'
+  push:
+    branches:
+      - codex/duomente-mvp
+    paths:
+      - 'mvp/**'
+      - '.github/workflows/mvp-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Typecheck, lint, tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mvp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mvp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and database tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
