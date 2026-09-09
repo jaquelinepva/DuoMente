@@ -13,8 +13,20 @@ import {
 } from '@/app/actions';
 import { areas } from '@/lib/domain';
 import { dateBR, display } from '@/lib/utils';
-export default async function Page({ params }: { params: Promise<{ section: string }> }) {
+import { AreaView } from '@/components/area-view';
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ section: string }>;
+  searchParams: Promise<{ area?: string }>;
+}) {
   const { section } = await params;
+  const { area } = await searchParams;
+  if (section === 'empresa' && area !== undefined) {
+    if (!/^[0-3]$/.test(area)) notFound();
+    return <AreaView index={Number(area)} />;
+  }
   if (!['onboarding', 'empresa', 'equipe', 'configuracoes', 'decisoes', 'acoes'].includes(section))
     notFound();
   if (section === 'onboarding') {

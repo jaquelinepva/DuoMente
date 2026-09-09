@@ -20,6 +20,7 @@ export async function proxy(request: NextRequest) {
     const target = request.nextUrl.clone();
     target.pathname = '/login';
     const redirect = NextResponse.redirect(target);
+    redirect.headers.set('Cache-Control', 'private, no-store');
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     return redirect;
   }

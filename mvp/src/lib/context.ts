@@ -16,7 +16,8 @@ export async function context(write = false) {
   const selected = (await cookies()).get('duomente-org')?.value;
   const member = members?.find((m) => String(m.organization_id) === selected) ?? members?.[0];
   if (!member) redirect('/app/onboarding');
-  if (write && member.role === 'viewer') throw new Error('Seu acesso permite somente leitura.');
+  if (write && !['owner', 'admin', 'manager', 'collaborator'].includes(member.role))
+    throw new Error('Seu acesso permite somente leitura.');
   return {
     client,
     user,

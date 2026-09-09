@@ -92,6 +92,8 @@ export function validateReferences(
   report: Report,
   evidence: { id: string; classification: string }[],
 ) {
+  if (new Set(report.area_analysis.map((item) => item.area)).size !== areas.length)
+    throw new Error('O relatório deve analisar cada uma das quatro áreas exatamente uma vez.');
   const map = new Map(evidence.map((e) => [String(e.id), e]));
   for (const c of report.claims) {
     if (c.evidence_ids.some((id) => !map.has(id)))

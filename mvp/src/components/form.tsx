@@ -7,7 +7,7 @@ export function ActionForm({
   label = 'Salvar',
   className = 'stack',
 }: {
-  action: (form: FormData) => Promise<void>;
+  action: (form: FormData) => Promise<void | { error: string }>;
   children: React.ReactNode;
   label?: string;
   className?: string;
@@ -21,8 +21,8 @@ export function ActionForm({
         setPending(true);
         setMessage('');
         try {
-          await action(form);
-          setMessage('Salvo com sucesso.');
+          const result = await action(form);
+          setMessage(result?.error ?? 'Salvo com sucesso.');
         } catch (e) {
           if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
           setMessage(e instanceof Error ? e.message : 'Não foi possível salvar. Tente novamente.');

@@ -6,7 +6,7 @@ Executada em 08 e 09/09/2026, Windows, Node.js 24.21.0.
 | --- | --- |
 | TypeScript strict (`npm run typecheck`) | Passou |
 | ESLint (`npm run lint`) | Passou, sem erros |
-| Vitest (`npm test`) | 18 testes passaram |
+| Vitest (`npm test`) | 26 testes passaram após revisão do PR |
 | Next.js production build (`npm run build`) | Passou |
 | Playwright HTTP | 3 cenários passaram; o encerramento do servidor exigiu intervenção no Windows |
 | Migração remota | Aplicada: 20260909162906_duomente_mvp |
