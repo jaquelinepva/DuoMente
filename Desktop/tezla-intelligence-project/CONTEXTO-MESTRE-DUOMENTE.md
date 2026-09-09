@@ -197,7 +197,7 @@ A interface deve diferenciar visualmente: informação; alerta; risco; oportunid
 
 Não preencher páginas com informações irrelevantes apenas para parecer que o sistema possui mais recursos.
 
-> ⚠️ **Conflito identificado em 08/09/2026**: esta regra contradiz diretamente o sistema visual "Night Audit" (fundo quase-preto #0b0d10, tema escuro como padrão) construído nas sessões anteriores após a usuária escolher essa direção via processo de design deliberado. Aguardando confirmação explícita da usuária sobre se isso é uma reversão intencional antes de qualquer alteração no CSS existente. Ver `CLAUDE.md`.
+> ✅ **Resolvido em 08/09/2026**: perguntado diretamente à usuária — esta regra é orientação geral de produto, não uma reversão do "Night Audit" (fundo quase-preto #0b0d10, tema escuro como padrão), que **continua valendo como identidade visual já decidida**. Não alterar o CSS base por causa desta seção.
 
 ## 18. O que o DuoMente não deve ser
 
