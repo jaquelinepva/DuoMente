@@ -457,6 +457,19 @@ main:has(.dashboard-shell){max-width:none;padding:0;display:block}
 .concept-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:6px 12px;border:1px solid var(--brass-dim);border-radius:3px;background:var(--bg);color:var(--brass);font-size:10.5px;font-weight:600;letter-spacing:.03em;font-family:var(--font-display)}
 .ai-command-card.is-concept .ai-signal-grid strong{color:var(--muted-soft)}
 
+/* ---------- Occupancy trend (real SVG chart) ---------- */
+.occupancy-trend-panel{margin-bottom:18px}
+.occupancy-chart-svg{width:100%;height:auto;display:block;margin-top:6px;font-variant-numeric:tabular-nums}
+.occ-grid-line{stroke:var(--line-soft);stroke-width:1}
+.occ-axis-label{fill:var(--muted-soft);font-size:9px;font-family:var(--font-display)}
+.occ-today-line{stroke:var(--brass-dim);stroke-width:1;stroke-dasharray:3 3}
+.occ-area{fill:var(--brass);fill-opacity:.12;stroke:none}
+.occ-line{stroke:var(--brass);stroke-width:2}
+.occ-dot{fill:var(--brass)}
+
+/* ---------- Priority alerts (real data table) ---------- */
+.priority-alerts-panel .pill{white-space:nowrap}
+
 /* ---------- Operational live summary ---------- */
 .operational-live{margin:0 0 20px;border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px}
 .live-state{display:flex;align-items:center;gap:8px;margin-bottom:16px;color:var(--muted);font-size:12px;font-family:var(--font-display)}
