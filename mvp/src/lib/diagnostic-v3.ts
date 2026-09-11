@@ -28,8 +28,8 @@ export const v3Questions: V3Question[] = [
   {
     id: 'v3_p1_focus',
     step: 1,
-    title: 'Se você pudesse resolver UMA coisa nos próximos 90 dias, qual seria?',
-    help: 'Escolha o que mais incomoda hoje. Isso é sua percepção inicial, não uma causa comprovada.',
+    title: 'Se você pudesse resolver UMA coisa nos próximos 30 dias, qual seria?',
+    help: 'Escolha o que mais precisa da sua atenção agora. Isso é sua percepção inicial, não uma causa comprovada.',
     kind: 'single',
     options: [
       'Vender/faturar mais',
@@ -67,7 +67,7 @@ export const v3Questions: V3Question[] = [
     id: 'v3_p5_deadline',
     step: 5,
     title: 'Quando você gostaria de chegar lá?',
-    help: 'Este é o prazo desejado, não uma promessa de viabilidade.',
+    help: 'Este é o prazo desejado. Se ultrapassar 30 dias, o DuoMente tratará os primeiros 30 dias como o primeiro ciclo de execução, não como promessa de atingir a meta inteira.',
     kind: 'single',
     options: ['1–2 semanas', '3–4 semanas', '1–3 meses', '3–6 meses', 'Mais de 6 meses', 'Ainda não sei'],
   },
