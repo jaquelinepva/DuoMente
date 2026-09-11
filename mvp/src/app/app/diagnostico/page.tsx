@@ -1,9 +1,9 @@
 import { context } from '@/lib/context';
 import { isV3QuestionId, nextV3Question, v3Progress, v3Questions } from '@/lib/diagnostic-v3';
 import { DiagnosticV3Live } from '@/components/diagnostic-v3-live';
+import { StartV3Diagnostic } from '@/components/start-v3-diagnostic';
 import { ActionForm } from '@/components/form';
 import { EvidenceForm } from '@/components/business-forms';
-import { startV3Diagnostic } from '@/app/actions-v3';
 import { openEvidence } from '@/app/actions';
 
 export default async function Page() {
@@ -30,10 +30,6 @@ export default async function Page() {
   const v3Answers = completed.filter((a) => isV3QuestionId(a.question_id));
   const legacyAnswers = completed.filter((a) => !isV3QuestionId(a.question_id));
 
-  // Uma sessão v3 recém-criada ainda não possui respostas. Antes desta regra,
-  // ela era confundida com uma sessão sem versão e a primeira tela nunca abria.
-  // Quando há uma sessão anterior, uma sessão mais recente vazia criada pelo fluxo v3
-  // deve começar diretamente em P1. Também aceitamos v3 explicitamente quando já há respostas v3.
   const isFreshV3Session = !!session && completed.length === 0 && !!previousSession;
   const hasV3 = isFreshV3Session || v3Answers.length > 0;
   const q = hasV3 ? nextV3Question(v3Answers) : undefined;
@@ -66,9 +62,10 @@ export default async function Page() {
       </div>
 
       {!session ? (
-        <ActionForm action={startV3Diagnostic} label="Iniciar Diagnóstico v3">
+        <section className="panel">
           <p>Você não precisa conhecer indicadores. Conte o que quer alcançar e o DuoMente organiza o que precisa ser medido.</p>
-        </ActionForm>
+          <StartV3Diagnostic />
+        </section>
       ) : !hasV3 && legacyAnswers.length > 0 ? (
         <section className="panel">
           <p className="eyebrow">HISTÓRICO PRESERVADO</p>
@@ -76,9 +73,8 @@ export default async function Page() {
           <p>
             Encontramos {legacyAnswers.length} respostas do questionário anterior. Elas não serão apagadas nem convertidas automaticamente para o novo modelo.
           </p>
-          <ActionForm action={startV3Diagnostic} label="Iniciar novo Diagnóstico v3">
-            <p>O novo diagnóstico será criado em uma sessão separada para permitir comparação posterior.</p>
-          </ActionForm>
+          <p>O novo diagnóstico será criado em uma sessão separada para permitir comparação posterior.</p>
+          <StartV3Diagnostic label="Iniciar novo Diagnóstico v3" />
         </section>
       ) : hasV3 ? (
         <>
@@ -117,9 +113,10 @@ export default async function Page() {
           )}
         </>
       ) : (
-        <ActionForm action={startV3Diagnostic} label="Iniciar Diagnóstico v3">
+        <section className="panel">
           <p>Vamos iniciar uma nova sessão do diagnóstico em linguagem simples.</p>
-        </ActionForm>
+          <StartV3Diagnostic />
+        </section>
       )}
 
       {role !== 'viewer' && (
