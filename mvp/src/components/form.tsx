@@ -23,11 +23,12 @@ export function ActionForm({
   return (
     <form
       className={className}
-      onSubmit={(event) => {
-        if (busy.current) event.preventDefault();
-        else busy.current = true;
-      }}
-      action={async (form) => {
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (busy.current) return;
+        busy.current = true;
+        const element = event.currentTarget;
+        const form = new FormData(element);
         if (idempotent) {
           requestId.current ??= crypto.randomUUID();
           form.set('request_id', requestId.current);
@@ -37,7 +38,10 @@ export function ActionForm({
         try {
           const result = await action(form);
           setMessage(result?.error ?? successMessage);
-          if (!result?.error) requestId.current = null;
+          if (!result?.error) {
+            requestId.current = null;
+            element.reset();
+          }
         } catch (e) {
           if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
           setMessage(e instanceof Error ? e.message : 'Não foi possível salvar. Tente novamente.');

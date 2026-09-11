@@ -42,3 +42,22 @@ export function reportFailure(
   }
   return { stage, code, ...(typeof status === 'number' ? { status } : {}) };
 }
+
+export function reportFailureMessage(code: string) {
+  const messages: Record<string, string> = {
+    AI_QUOTA_EXHAUSTED:
+      'A cota da OpenAI está esgotada. O administrador precisa revisar os créditos e limites do projeto na OpenAI antes de tentar novamente.',
+    AI_RATE_OR_QUOTA_LIMIT:
+      'A OpenAI recusou a geração por limite de uso ou cota. Aguarde antes de tentar novamente. Se persistir, o administrador precisa verificar os limites e créditos do projeto na OpenAI.',
+    AI_AUTH_FAILED:
+      'A OpenAI não autorizou a geração. O administrador precisa revisar a chave e as permissões configuradas.',
+    AI_MODEL_UNAVAILABLE:
+      'O modelo de IA configurado não está disponível. O administrador precisa revisar a configuração.',
+    AI_REQUEST_REJECTED:
+      'A OpenAI recusou a solicitação de relatório. O administrador precisa verificar a configuração da geração.',
+    AI_TIMEOUT: 'A geração demorou além do limite. Tente novamente em alguns instantes.',
+    REPORT_INVALID: 'A resposta da IA não passou na validação. Tente gerar o relatório novamente.',
+    REPORT_SAVE_FAILED: 'O relatório foi gerado, mas não foi possível salvá-lo. Tente novamente.',
+  };
+  return `${messages[code] ?? 'Não foi possível gerar o relatório. Tente novamente em alguns instantes.'} Suas respostas estão salvas.`;
+}

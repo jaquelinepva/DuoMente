@@ -1,10 +1,11 @@
 import Link from 'next/link';
 export const maxDuration = 60;
 import { context } from '@/lib/context';
-import { reportSchema, classifications, questions } from '@/lib/domain';
+import { reportSchema, classifications, questions, nextQuestion } from '@/lib/domain';
 import { display, dateBR } from '@/lib/utils';
 import { approveReport, generateReport } from '@/app/actions';
 import { ActionForm } from '@/components/form';
+import { ReportExport } from '@/components/report-export';
 export default async function ReportPage() {
   const { client, org, role } = await context();
   const [
@@ -35,11 +36,21 @@ export default async function ReportPage() {
         .eq('is_draft', false)
     : { data: [] };
   const parsed = reportSchema.safeParse(session?.report);
+  const ready = session && objective?.confirmed_at && !nextQuestion(profileAnswers ?? []);
   if (!parsed.success)
     return (
       <>
         <h1>Relatório do diagnóstico</h1>
-        <p>Conclua as perguntas e confirme seu objetivo global para gerar o relatório.</p>
+        <p>
+          {ready
+            ? 'Suas respostas estão salvas. O relatório ainda não foi gerado.'
+            : 'Conclua as perguntas e confirme seu objetivo global para gerar o relatório.'}
+        </p>
+        {ready && role !== 'viewer' && (
+          <ActionForm action={generateReport} label="Gerar relatório para revisão">
+            <input type="hidden" name="id" value={session.id} />
+          </ActionForm>
+        )}
         <Link className="button" href="/app/diagnostico">
           Continuar diagnóstico →
         </Link>
@@ -49,6 +60,7 @@ export default async function ReportPage() {
   return (
     <>
       <div className="page-heading">
+        <ReportExport />
         <p className="eyebrow">{company?.name} · DIAGNÓSTICO</p>
         <h1>
           O que sabemos.

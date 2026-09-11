@@ -15,7 +15,7 @@ import {
   reportSchema,
 } from '@/lib/domain';
 import { generateExecutiveReport, PROMPT_VERSION } from '@/lib/ai/report';
-import { reportFailure, type ReportStage } from '@/lib/ai/report-errors';
+import { reportFailure, reportFailureMessage, type ReportStage } from '@/lib/ai/report-errors';
 const str = (f: FormData, key: string) => String(f.get(key) ?? '').trim();
 function check(error: { message: string } | null) {
   if (error) throw new Error(error.message);
@@ -435,7 +435,7 @@ export async function generateReport(form: FormData) {
       .eq('id', run!.id)
       .eq('organization_id', org);
     return {
-      error: `Não foi possível ${stage === 'persistence' ? 'salvar' : 'gerar'} o relatório. Suas respostas estão salvas. Código: ${failure.code}.`,
+      error: reportFailureMessage(failure.code),
     };
   }
   // A failed audit update must not turn a persisted report into a generation failure.

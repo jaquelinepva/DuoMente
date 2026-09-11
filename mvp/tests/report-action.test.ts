@@ -102,7 +102,7 @@ it('persiste o relatório antes de redirecionar', async () => {
 it('distingue falha de persistência de falha do provedor', async () => {
   mocks.generate.mockResolvedValue({ summary: 'Relatório' });
   failSave = true;
-  expect((await generateReport(form()))?.error).toContain('REPORT_SAVE_FAILED');
+  expect((await generateReport(form()))?.error).toContain('não foi possível salvá-lo');
 });
 it('não reporta falha de geração quando apenas a auditoria falha', async () => {
   mocks.generate.mockResolvedValue({ summary: 'Relatório' });
