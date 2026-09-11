@@ -1,6 +1,5 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { context } from '@/lib/context';
@@ -29,7 +28,7 @@ export async function startV3Diagnostic() {
       .eq('organization_id', org)
       .eq('session_id', latest.id);
     check(answerError);
-    reuse = !!answers?.some((answer) => isV3QuestionId(answer.question_id));
+    reuse = !answers?.length || answers.some((answer) => isV3QuestionId(answer.question_id));
   }
 
   if (!reuse) {
@@ -43,7 +42,7 @@ export async function startV3Diagnostic() {
   }
 
   revalidatePath('/app/diagnostico');
-  redirect('/app/diagnostico');
+  return { ok: true };
 }
 
 export async function saveV3Answer(input: {
