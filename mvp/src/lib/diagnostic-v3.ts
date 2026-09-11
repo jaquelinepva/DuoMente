@@ -46,7 +46,7 @@ export const v3Questions: V3Question[] = [
     id: 'v3_p2_example',
     step: 2,
     title: 'Qual situação melhor descreve o que está acontecendo hoje?',
-    help: 'Escolha a opção mais próxima da sua realidade. O objetivo é entender o sintoma sem exigir que você escreva uma explicação técnica.',
+    help: 'Escolha a opção mais próxima da sua realidade. Não precisa escrever nem conhecer termos de gestão.',
     kind: 'single',
     options: [
       'As vendas/faturamento estão abaixo do que eu esperava',
@@ -69,8 +69,8 @@ export const v3Questions: V3Question[] = [
   {
     id: 'v3_p4_goal',
     step: 4,
-    title: 'Onde você está hoje e onde gostaria de chegar?',
-    help: 'Use a sua linguagem. Nós traduzimos isso para indicadores depois. Unidade e período precisam ficar claros.',
+    title: 'Qual é a sua meta principal?',
+    help: 'Informe apenas o valor que você quer alcançar. O DuoMente usa o contexto das respostas anteriores para entender o que essa meta representa.',
     kind: 'goal',
   },
   {
@@ -102,7 +102,7 @@ export const v3Questions: V3Question[] = [
     id: 'v3_p7_radar',
     step: 7,
     title: 'Como você enxerga sua empresa hoje?',
-    help: 'Avalie as quatro áreas pela sua percepção. Depois o DuoMente separa essa percepção da situação baseada em dados.',
+    help: 'Dê sua percepção geral. Depois o DuoMente compara essa percepção com os dados disponíveis.',
     kind: 'radar',
   },
   {
@@ -155,11 +155,13 @@ export const impactSchema = z.object({
   unit: z.string().max(100).optional().default(''),
 });
 
+// O formato mantém current/unit/period opcionais apenas para ler sessões v3 já criadas.
+// Novas respostas de meta precisam somente de target.
 export const goalSchema = z.object({
-  current: z.string().min(1).max(300),
   target: z.string().min(1).max(300),
-  unit: z.string().min(1).max(100),
-  period: z.string().min(1).max(100),
+  current: z.string().max(300).optional().default(''),
+  unit: z.string().max(100).optional().default(''),
+  period: z.string().max(100).optional().default(''),
 });
 
 export const blockerSchema = z.object({
@@ -188,9 +190,8 @@ export function validateV3Answer(questionId: string, answer: string, unknown: bo
   if (questionId === 'v3_p3_impact') impactSchema.parse(json(answer));
   if (questionId === 'v3_p4_goal') {
     const parsed = goalSchema.parse(json(answer));
-    const combined = `${parsed.current} ${parsed.target}`;
-    if (hasAmbiguousMagnitude(combined))
-      throw new Error('Há um valor ambíguo. Escreva por extenso ou com a unidade completa, por exemplo R$ 50.000 por mês.');
+    if (hasAmbiguousMagnitude(parsed.target))
+      throw new Error('Há um valor ambíguo. Escreva o valor completo, por exemplo 50.000.');
   }
   if (questionId === 'v3_p6_blockers') {
     const parsed = blockerSchema.parse(json(answer));
