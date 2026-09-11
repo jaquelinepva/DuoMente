@@ -6,7 +6,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { browserDb } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
+
 const schema = z.object({ email: z.email('Informe um e-mail válido.'), password: z.string() });
+
+async function withTimeout<T>(promise: Promise<T>, ms = 15000): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function AuthForm({ mode }: { mode: 'login' | 'cadastro' | 'recuperar-senha' }) {
   const router = useRouter();
   const [message, setMessage] = useState(''),
@@ -18,6 +32,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'cadastro' | 'recuperar-sen
     setValue,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } });
+
   useEffect(() => {
     const c = browserDb();
     const url = new URL(window.location.href);
@@ -41,11 +56,12 @@ export function AuthForm({ mode }: { mode: 'login' | 'cadastro' | 'recuperar-sen
     });
     return () => data.subscription.unsubscribe();
   }, [mode, router, setValue]);
+
   return (
     <form
       className="stack"
       onSubmit={handleSubmit(async (value) => {
-        setMessage('');
+        setMessage('Processando…');
         const c = browserDb();
         if (mode === 'cadastro' || recover) {
           if (value.password.length < 10) {
@@ -53,44 +69,61 @@ export function AuthForm({ mode }: { mode: 'login' | 'cadastro' | 'recuperar-sen
             return;
           }
         }
-        if (recover) {
-          const { error } = await c.auth.updateUser({ password: value.password });
-          setMessage(
-            error
-              ? 'Não foi possível atualizar a senha. Solicite outro link.'
-              : 'Senha atualizada. Você já pode entrar.',
-          );
-          if (!error) router.push('/app');
-          return;
-        }
-        if (mode === 'login') {
-          const { error } = await c.auth.signInWithPassword(value);
-          if (error)
+
+        try {
+          if (recover) {
+            const { error } = await withTimeout(c.auth.updateUser({ password: value.password }));
             setMessage(
-              'Não foi possível entrar. Verifique e-mail, senha e confirmação de cadastro.',
+              error
+                ? 'Não foi possível atualizar a senha. Solicite outro link.'
+                : 'Senha atualizada. Você já pode entrar.',
             );
-          else {
-            router.push('/app');
-            router.refresh();
+            if (!error) router.push('/app');
+            return;
           }
-        } else if (mode === 'cadastro') {
-          const { error } = await c.auth.signUp({
-            ...value,
-            options: { emailRedirectTo: window.location.origin + '/login' },
-          });
-          setMessage(
-            error
-              ? 'Não foi possível concluir o cadastro. Tente novamente.'
-              : 'Confira seu e-mail para confirmar o cadastro.',
+
+          if (mode === 'login') {
+            const { error } = await withTimeout(c.auth.signInWithPassword(value));
+            if (error)
+              setMessage(
+                'Não foi possível entrar. Verifique e-mail, senha e confirmação de cadastro.',
+              );
+            else {
+              setMessage('Entrada confirmada. Abrindo seu painel…');
+              router.push('/app');
+              router.refresh();
+            }
+            return;
+          }
+
+          if (mode === 'cadastro') {
+            const { error } = await withTimeout(
+              c.auth.signUp({
+                ...value,
+                options: { emailRedirectTo: window.location.origin + '/login' },
+              }),
+            );
+            setMessage(
+              error
+                ? 'Não foi possível concluir o cadastro agora. Tente novamente.'
+                : 'Se este e-mail for novo, enviamos uma confirmação. Se você já tem conta, entre ou use “Esqueci minha senha”.',
+            );
+            return;
+          }
+
+          const { error } = await withTimeout(
+            c.auth.resetPasswordForEmail(value.email, {
+              redirectTo: window.location.origin + '/recuperar-senha',
+            }),
           );
-        } else {
-          const { error } = await c.auth.resetPasswordForEmail(value.email, {
-            redirectTo: window.location.origin + '/recuperar-senha',
-          });
           setMessage(
             error
               ? 'Não foi possível enviar a solicitação agora. Tente novamente mais tarde.'
               : 'Se houver uma conta para esse e-mail, você receberá o link de recuperação.',
+          );
+        } catch {
+          setMessage(
+            'A solicitação demorou mais que o esperado ou houve uma falha de conexão. Tente novamente.',
           );
         }
       })}
