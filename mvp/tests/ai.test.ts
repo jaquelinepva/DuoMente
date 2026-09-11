@@ -17,20 +17,28 @@ const report = () => ({
 describe('IA no servidor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubEnv('OPENAI_API_KEY', 'test-server-secret');
+    vi.stubEnv('AI_PROVIDER', 'openrouter');
+    vi.stubEnv('AI_API_KEY', 'test-server-secret');
+    vi.stubEnv('AI_BASE_URL', 'https://openrouter.ai/api/v1');
+    vi.stubEnv('AI_MODEL', 'openai/gpt-4.1-mini');
     mocks.provider.mockReturnValue({ responses: vi.fn(() => 'test-model') });
   });
   afterEach(() => vi.unstubAllEnvs());
   it('não chama o provedor sem credencial', async () => {
+    vi.stubEnv('AI_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
     vi.stubEnv('OPENAI_API_KEY', '');
     await expect(generateExecutiveReport({}, [])).rejects.toThrow('AI_NOT_CONFIGURED');
     expect(mocks.provider).not.toHaveBeenCalled();
   });
-  it('usa chave no provedor, limita execução e desativa armazenamento da resposta', async () => {
+  it('usa OpenRouter no servidor, limita execução e desativa armazenamento da resposta', async () => {
     mocks.generate.mockResolvedValue({ output: report() });
     const result = await generateExecutiveReport({ business: { name: 'Empresa fictícia' } }, []);
     expect(result.area_analysis).toHaveLength(4);
-    expect(mocks.provider).toHaveBeenCalledWith({ apiKey: 'test-server-secret' });
+    expect(mocks.provider).toHaveBeenCalledWith({
+      apiKey: 'test-server-secret',
+      baseURL: 'https://openrouter.ai/api/v1',
+    });
     const options = mocks.generate.mock.calls[0][0];
     expect(options.providerOptions.openai.store).toBe(false);
     expect(options.abortSignal).toBeInstanceOf(AbortSignal);
