@@ -1,32 +1,48 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 export function ActionForm({
   action,
   children,
   label = 'Salvar',
   className = 'stack',
+  idempotent = false,
+  successMessage = 'Salvo com sucesso.',
 }: {
   action: (form: FormData) => Promise<void | { error: string }>;
   children: React.ReactNode;
   label?: string;
   className?: string;
+  idempotent?: boolean;
+  successMessage?: string;
 }) {
   const [pending, setPending] = useState(false),
     [message, setMessage] = useState('');
+  const busy = useRef(false);
+  const requestId = useRef<string | null>(null);
   return (
     <form
       className={className}
+      onSubmit={(event) => {
+        if (busy.current) event.preventDefault();
+        else busy.current = true;
+      }}
       action={async (form) => {
+        if (idempotent) {
+          requestId.current ??= crypto.randomUUID();
+          form.set('request_id', requestId.current);
+        }
         setPending(true);
         setMessage('');
         try {
           const result = await action(form);
-          setMessage(result?.error ?? 'Salvo com sucesso.');
+          setMessage(result?.error ?? successMessage);
+          if (!result?.error) requestId.current = null;
         } catch (e) {
           if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
           setMessage(e instanceof Error ? e.message : 'Não foi possível salvar. Tente novamente.');
         } finally {
+          busy.current = false;
           setPending(false);
         }
       }}

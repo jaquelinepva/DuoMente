@@ -3,7 +3,12 @@ import { addEvidence, saveObjective } from '@/app/actions';
 import { areas, classifications } from '@/lib/domain';
 export function EvidenceForm() {
   return (
-    <ActionForm action={addEvidence} label="Registrar evidência">
+    <ActionForm
+      action={addEvidence}
+      label="Registrar evidência"
+      idempotent
+      successMessage="Evidência registrada. Confira o registro na lista abaixo; você pode continuar o diagnóstico."
+    >
       <Field name="description" label="O que esta informação mostra?" required area />
       <label className="field">
         Classificação

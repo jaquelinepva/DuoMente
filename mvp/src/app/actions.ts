@@ -15,6 +15,7 @@ import {
   reportSchema,
 } from '@/lib/domain';
 import { generateExecutiveReport, PROMPT_VERSION } from '@/lib/ai/report';
+import { reportFailure, type ReportStage } from '@/lib/ai/report-errors';
 const str = (f: FormData, key: string) => String(f.get(key) ?? '').trim();
 function check(error: { message: string } | null) {
   if (error) throw new Error(error.message);
@@ -240,6 +241,7 @@ export async function pauseDiagnostic(form: FormData) {
 }
 export async function addEvidence(form: FormData) {
   const { client, org, user } = await context(true);
+  const id = z.uuid().parse(form.get('request_id'));
   const data = evidenceSchema.parse(
     Object.fromEntries(
       ['description', 'classification', 'source', 'period', 'assumptions', 'confidence'].map(
@@ -247,6 +249,22 @@ export async function addEvidence(form: FormData) {
       ),
     ),
   );
+  async function findReceipt() {
+    const result = await client
+      .from('evidence_items')
+      .select('*')
+      .eq('organization_id', org)
+      .eq('created_by', user.id)
+      .eq('id', id)
+      .maybeSingle();
+    check(result.error);
+    if (result.data && Object.entries(data).some(([key, value]) => result.data[key] !== value))
+      throw new Error(
+        'Este envio já foi registrado com outro conteúdo. Atualize a página para registrar uma nova evidência.',
+      );
+    return result.data;
+  }
+  if (await findReceipt()) return;
   let storage_path: string | null = null;
   const file = form.get('file');
   if (file instanceof File && file.size) {
@@ -265,6 +283,7 @@ export async function addEvidence(form: FormData) {
     );
   }
   const { error } = await client.from('evidence_items').insert({
+    id,
     ...data,
     organization_id: org,
     created_by: user.id,
@@ -272,6 +291,8 @@ export async function addEvidence(form: FormData) {
     storage_path,
   });
   if (error && storage_path) await client.storage.from('evidence').remove([storage_path]);
+  // The existing primary key arbitrates concurrent retries, including separate servers.
+  if (error?.code === '23505' && (await findReceipt())) return;
   check(error);
   await invalidateReport(client, org);
   revalidatePath('/app', 'layout');
@@ -354,7 +375,12 @@ export async function generateReport(form: FormData) {
     })
     .select('id')
     .single();
-  check(error);
+  if (error || !run)
+    return {
+      error:
+        'Não foi possível iniciar a geração. Suas respostas estão salvas. Código: REPORT_START_FAILED.',
+    };
+  let stage: ReportStage = 'generation';
   try {
     const report = await generateExecutiveReport(
       {
@@ -384,6 +410,7 @@ export async function generateReport(form: FormData) {
       },
       evidence ?? [],
     );
+    stage = 'persistence';
     check(
       (
         await client
@@ -391,35 +418,44 @@ export async function generateReport(form: FormData) {
           .update({ report, status: 'awaiting_approval', report_approved_at: null })
           .eq('organization_id', org)
           .eq('id', id)
+          .select('id')
+          .single()
       ).error,
     );
-    check(
-      (
-        await client
-          .from('agent_runs')
-          .update({
-            status: 'succeeded',
-            output_payload: { session_id: id },
-            finished_at: new Date().toISOString(),
-          })
-          .eq('id', run!.id)
-          .eq('organization_id', org)
-      ).error,
-    );
-  } catch {
+  } catch (error) {
+    const failure = reportFailure(error, stage);
+    console.error('duomente.report.failed', { run_id: run.id, ...failure });
     await client
       .from('agent_runs')
       .update({
         status: 'failed',
-        error_message: 'Falha na geração ou validação do relatório.',
+        error_message: JSON.stringify(failure),
         finished_at: new Date().toISOString(),
       })
       .eq('id', run!.id)
       .eq('organization_id', org);
     return {
-      error:
-        'Não foi possível gerar um relatório validado. Suas respostas estão salvas; tente novamente.',
+      error: `Não foi possível ${stage === 'persistence' ? 'salvar' : 'gerar'} o relatório. Suas respostas estão salvas. Código: ${failure.code}.`,
     };
+  }
+  // A failed audit update must not turn a persisted report into a generation failure.
+  try {
+    const audit = await client
+      .from('agent_runs')
+      .update({
+        status: 'succeeded',
+        output_payload: { session_id: id },
+        finished_at: new Date().toISOString(),
+      })
+      .eq('id', run.id)
+      .eq('organization_id', org);
+    if (audit.error)
+      console.error('duomente.report.audit_failed', {
+        run_id: run.id,
+        code: 'REPORT_AUDIT_FAILED',
+      });
+  } catch {
+    console.error('duomente.report.audit_failed', { run_id: run.id, code: 'REPORT_AUDIT_FAILED' });
   }
   revalidatePath('/app', 'layout');
   redirect('/app/diagnostico/relatorio');
