@@ -45,9 +45,19 @@ export const v3Questions: V3Question[] = [
   {
     id: 'v3_p2_example',
     step: 2,
-    title: 'Conte um exemplo real disso que aconteceu nos últimos 30 dias.',
-    help: 'Um caso concreto ajuda a separar percepção de evidência. Se possível, use números que você realmente conhece.',
-    kind: 'text',
+    title: 'Qual situação melhor descreve o que está acontecendo hoje?',
+    help: 'Escolha a opção mais próxima da sua realidade. O objetivo é entender o sintoma sem exigir que você escreva uma explicação técnica.',
+    kind: 'single',
+    options: [
+      'As vendas/faturamento estão abaixo do que eu esperava',
+      'Tenho vendas, mas o dinheiro sobra pouco',
+      'Estou perdendo clientes ou eles não voltam',
+      'Tenho atrasos, erros ou retrabalho',
+      'A equipe não consegue acompanhar ou depende demais de mim',
+      'Tenho dados, mas não consigo entender o que eles significam',
+      'Tenho vários problemas e não sei qual é o principal',
+      'Outro cenário parecido',
+    ],
   },
   {
     id: 'v3_p3_impact',
