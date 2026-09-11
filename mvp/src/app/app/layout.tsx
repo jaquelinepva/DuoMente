@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { db } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Home, MessagesSquare, ListTodo, Building2, Users, Settings, FileText } from 'lucide-react';
+import { Home, MessagesSquare, ListTodo, Building2, Users, Settings } from 'lucide-react';
 import { signOut } from '@/app/actions';
-import { areas } from '@/lib/domain';
 export const dynamic = 'force-dynamic';
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const client = await db();
@@ -21,7 +20,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {[
             ['/app', 'Início', Home],
             ['/app/diagnostico', 'Diagnóstico', MessagesSquare],
-            ['/app/diagnostico/relatorio', 'Relatório', FileText],
             ['/app/decisoes', 'Decisões', MessagesSquare],
             ['/app/acoes', 'Ações', ListTodo],
             ['/app/empresa', 'Empresa', Building2],
@@ -36,13 +34,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
-        </nav>
-        <nav aria-label="Áreas da empresa">
-          {areas.map((area, i) => (
-            <Link key={area} href={`/app/empresa?area=${i}`}>
-              {area}
-            </Link>
-          ))}
         </nav>
         <p className="sidebar-bottom">
           Entender.

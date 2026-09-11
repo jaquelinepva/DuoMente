@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { context } from '@/lib/context';
 import { isV3QuestionId, nextV3Question, validateV3Answer } from '@/lib/diagnostic-v3';
+import { isUnknownAnswer } from '@/lib/initial-map';
 
 function check(error: { message: string } | null) {
   if (error) throw new Error(error.message);
@@ -24,11 +25,14 @@ export async function startV3Diagnostic() {
   if (latest && latest.status !== 'completed') {
     const { data: answers, error: answerError } = await client
       .from('diagnostic_answers')
-      .select('question_id')
+      .select('question_id,answer,unknown,is_draft')
       .eq('organization_id', org)
       .eq('session_id', latest.id);
     check(answerError);
-    reuse = !answers?.length || answers.some((answer) => isV3QuestionId(answer.question_id));
+    reuse =
+      !answers?.length ||
+      (answers.some((answer) => isV3QuestionId(answer.question_id)) &&
+        !!nextV3Question(answers.filter((answer) => !answer.is_draft)));
   }
 
   if (!reuse) {
@@ -70,7 +74,8 @@ export async function saveV3Answer(input: {
     .eq('organization_id', org)
     .single();
   check(error);
-  if (!session || session.status === 'completed') throw new Error('Este diagnóstico já foi concluído.');
+  if (!session || session.status === 'completed')
+    throw new Error('Este diagnóstico já foi concluído.');
 
   const { data: completed, error: completedError } = await client
     .from('diagnostic_answers')
@@ -95,7 +100,7 @@ export async function saveV3Answer(input: {
 
   const answerData = {
     answer: value.unknown ? 'N/D' : value.answer,
-    unknown: value.unknown,
+    unknown: isUnknownAnswer(value),
     is_draft: false,
   };
 

@@ -1,6 +1,7 @@
 import { context } from '@/lib/context';
-import { isV3QuestionId, nextV3Question, v3Progress, v3Questions } from '@/lib/diagnostic-v3';
+import { isV3QuestionId, nextV3Question, v3Progress } from '@/lib/diagnostic-v3';
 import { DiagnosticV3Live } from '@/components/diagnostic-v3-live';
+import { InitialMap } from '@/components/initial-map';
 import { StartV3Diagnostic } from '@/components/start-v3-diagnostic';
 
 export default async function Page() {
@@ -13,7 +14,13 @@ export default async function Page() {
     .limit(5);
 
   let session: (typeof sessions extends Array<infer T> | null ? T : never) | undefined;
-  let answers: Array<{ id: string; question_id: string; answer: string; unknown: boolean; is_draft: boolean }> = [];
+  let answers: Array<{
+    id: string;
+    question_id: string;
+    answer: string;
+    unknown: boolean;
+    is_draft: boolean;
+  }> = [];
 
   // A interface v3 ignora completamente sessões legadas. Elas continuam no banco apenas
   // para auditoria/comparação e nunca mais são exibidas ao empresário.
@@ -55,26 +62,19 @@ export default async function Page() {
         <>
           <progress value={v3Progress(completed)} max={10} aria-label="Progresso do diagnóstico" />
           {session.status === 'completed' || !q ? (
-            <section className="panel">
-              <p className="eyebrow">MAPA INICIAL</p>
-              <h2>Seu ponto de partida foi confirmado.</h2>
-              <p>
-                Agora o DuoMente deve transformar seu objetivo em números que precisamos acompanhar,
-                separando o que você informou do que ainda precisa ser comprovado.
-              </p>
-              <details open>
-                <summary>Resumo confirmado ({completed.length} etapas)</summary>
-                {completed.map((a) => (
-                  <div className="list-row" key={a.id}>
-                    <div>
-                      <strong>{v3Questions.find((item) => item.id === a.question_id)?.title ?? a.question_id}</strong>
-                      <p>{a.unknown ? 'Não sei / ainda precisamos descobrir' : a.answer}</p>
-                    </div>
-                    <span className="badge">{a.unknown ? 'A descobrir' : 'Informado por você'}</span>
-                  </div>
-                ))}
-              </details>
-            </section>
+            <>
+              <InitialMap answers={completed} />
+              {role !== 'viewer' && (
+                <section className="panel">
+                  <h2>Quer fazer um novo diagnóstico?</h2>
+                  <p>
+                    Comece novamente pela pergunta 1. As respostas anteriores ficam preservadas no
+                    histórico.
+                  </p>
+                  <StartV3Diagnostic label="Iniciar novo diagnóstico" />
+                </section>
+              )}
+            </>
           ) : (
             <DiagnosticV3Live
               key={q.id}
