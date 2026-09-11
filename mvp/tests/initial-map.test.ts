@@ -26,7 +26,7 @@ describe('Mapa Inicial', () => {
     );
     expect(html).not.toContain('confirmed');
     expect(html).not.toContain('&quot;mode&quot;');
-    expect(html).toContain('O que ainda não sabemos');
+    expect(html).toContain('Ainda não sabemos');
   });
   it('preserva unidade ambígua e não calcula um gap inventado', () => {
     const map = buildInitialMap([
