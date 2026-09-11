@@ -1,119 +1,133 @@
 import { type V3Answer, v3Questions } from '@/lib/diagnostic-v3';
 import { answerStatus, buildInitialMap, displayV3Answer } from '@/lib/initial-map';
 
-const perceptionScore: Record<string, number> = { Verde: 3, Amarelo: 2, Vermelho: 1, Cinza: 0 };
 const perceptionText: Record<string, string> = {
-  Verde: 'Você percebe esta parte da empresa como funcionando bem.',
-  Amarelo: 'Você sente que esta parte merece atenção.',
-  Vermelho: 'Você percebe um problema importante aqui.',
-  Cinza: 'Você ainda não tem informação suficiente para avaliar.',
+  Verde: 'Na sua percepção, está funcionando bem.',
+  Amarelo: 'Na sua percepção, merece atenção.',
+  Vermelho: 'Na sua percepção, existe um problema importante.',
+  Cinza: 'Você ainda não sabe avaliar.',
 };
+const perceptionWidth: Record<string, number> = { Verde: 100, Amarelo: 66, Vermelho: 33, Cinza: 8 };
 
 function PerceptionChart({ radar }: { radar: Array<{ label: string; perception: string }> }) {
   return (
-    <div className="panel stack">
+    <section className="panel stack">
       <div>
-        <p className="eyebrow">LEITURA VISUAL · SUA PERCEPÇÃO</p>
-        <h3>Como você enxerga a empresa hoje</h3>
-        <p className="muted">
-          Este gráfico não é uma nota de desempenho. Ele apenas transforma suas respostas em uma leitura visual inicial. Os dados reais ainda serão conectados e validados.
-        </p>
+        <p className="eyebrow">1 · COMO VOCÊ ENXERGA A EMPRESA HOJE</p>
+        <h3>Seu primeiro retrato</h3>
+        <p className="muted">Não é uma nota. É a sua percepção inicial. Conforme os dados entrarem, o DuoMente vai mostrar ao lado o que os números realmente indicam.</p>
       </div>
-      {radar.map((area) => {
-        const score = perceptionScore[area.perception] ?? 0;
-        const width = area.perception === 'Cinza' ? 8 : score === 1 ? 33 : score === 2 ? 66 : 100;
-        return (
-          <div key={area.label} className="stack" style={{ gap: '0.35rem' }}>
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <strong>{area.label}</strong>
-              <span className="badge">{area.perception === 'Cinza' ? 'Não sei avaliar' : area.perception}</span>
-            </div>
-            <div aria-label={`${area.label}: ${area.perception}`} style={{ height: 12, borderRadius: 999, background: 'var(--border, #ddd)', overflow: 'hidden' }}>
-              <div style={{ width: `${width}%`, height: '100%', borderRadius: 999, background: 'currentColor' }} />
-            </div>
-            <p className="caption">{perceptionText[area.perception] ?? 'Percepção ainda não informada.'}</p>
+      {radar.map((area) => (
+        <div key={area.label} className="stack" style={{ gap: '.35rem' }}>
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <strong>{area.label}</strong>
+            <span className="badge">{area.perception === 'Cinza' ? 'Não sei avaliar' : area.perception}</span>
           </div>
-        );
-      })}
-      <p><strong>Como ler:</strong> o gráfico mostra onde você acredita estar bem, onde sente atenção e onde ainda não sabe avaliar. No próximo passo, o DuoMente vai confrontar essa percepção com números reais.</p>
-    </div>
+          <div style={{ height: 14, borderRadius: 999, background: '#e8e4dc', overflow: 'hidden' }} aria-label={`${area.label}: ${area.perception}`}>
+            <div style={{ width: `${perceptionWidth[area.perception] ?? 8}%`, height: '100%', borderRadius: 999, background: 'currentColor' }} />
+          </div>
+          <p className="caption">{perceptionText[area.perception]}</p>
+        </div>
+      ))}
+      <p><strong>Como ler:</strong> isto mostra onde você sente segurança, atenção ou dúvida. Ainda não usamos esses sinais para julgar o desempenho da empresa.</p>
+    </section>
+  );
+}
+
+function StatusSummary({ available, missing }: { available: number; missing: number }) {
+  const total = available + missing;
+  const pct = total ? Math.round((available / total) * 100) : 0;
+  return (
+    <section className="panel stack">
+      <p className="eyebrow">3 · O QUE JÁ CONSEGUIMOS MEDIR</p>
+      <h3>{available} de {total || 0} números importantes já foram informados</h3>
+      <div style={{ height: 16, borderRadius: 999, background: '#e8e4dc', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, background: 'currentColor' }} />
+      </div>
+      <p className="muted">Isso não significa que {pct}% da empresa está bem. Significa apenas quanto da informação necessária para decidir já está disponível para validação.</p>
+    </section>
   );
 }
 
 export function InitialMap({ answers }: { answers: V3Answer[] }) {
   const map = buildInitialMap(answers);
+  const available = map.indicators.filter((i) => i.status !== 'Faltante').length;
+  const missing = map.indicators.filter((i) => i.status === 'Faltante').length;
   return (
-    <section className="panel stack">
-      <div>
-        <p className="eyebrow">MAPA INICIAL DE GESTÃO</p>
-        <h2>Seu ponto de partida.</h2>
-        <p>Agora vamos transformar suas respostas em uma leitura simples e descobrir quais números precisamos buscar.</p>
-      </div>
+    <section className="stack">
+      <section className="panel stack">
+        <div>
+          <p className="eyebrow">MAPA INICIAL DUOMENTE</p>
+          <h2>Agora você já tem um ponto de partida.</h2>
+          <p>Não precisa interpretar o questionário. O DuoMente vai transformar suas respostas em objetivo, sinais visuais, números necessários e próximos passos.</p>
+        </div>
 
-      <PerceptionChart radar={map.radar} />
-
-      <section className="panel">
-        <p className="eyebrow">O QUE ISSO SIGNIFICA AGORA</p>
-        <h3>O DuoMente ainda não está dando uma nota para sua empresa.</h3>
-        <p>Primeiro registramos como você enxerga o negócio. Depois vamos buscar os dados necessários para verificar o que está realmente acontecendo e acompanhar sua meta.</p>
-      </section>
-
-      <section>
-        <h3>Seu objetivo</h3>
-        <p>{map.text('v3_p1_focus')}</p>
-        <p>Meta declarada: {map.text('v3_p4_goal')}</p>
-        <p>Prazo desejado: {map.text('v3_p5_deadline')}. A viabilidade ainda não foi avaliada.</p>
-        <p>Bloqueios percebidos: {map.text('v3_p6_blockers')}.</p>
-      </section>
-
-      <section>
-        <h3>O que já temos</h3>
-        <p>Situação declarada: {map.text('v3_p2_example')}</p>
-        <p>Impacto: {map.text('v3_p3_impact')}.</p>
-        <p>Dados que você afirma acompanhar: {map.declaredData.join(', ') || 'Nenhum informado'}.</p>
-        <p>Fonte declarada: {map.text('v3_p9_evidence')}.</p>
-      </section>
-
-      <section>
-        <h3>O que precisamos descobrir</h3>
-        <ul>
-          {map.unknowns.map((a) => (
-            <li key={a.question_id}>{v3Questions.find((q) => q.id === a.question_id)?.title} — a descobrir.</li>
-          ))}
-          {map.indicators.filter((i) => i.status === 'Faltante').map((i) => <li key={i.key}>{i.data}.</li>)}
-          <li>Se os dados informados são confiáveis, atuais e comparáveis.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h3>Os números que vão nos ajudar a decidir</h3>
-        <p className="muted">O DuoMente escolheu estes pontos porque eles ajudam a entender seu objetivo. Você não precisa saber o nome técnico deles.</p>
-        {map.indicators.length ? map.indicators.map((i) => (
-          <div className="panel" key={i.key}>
-            <h4>{i.name}</h4>
-            <span className="badge">{i.status === 'Faltante' ? 'Precisamos deste dado' : 'Você disse que acompanha'}</span>
-            <p>{i.why}</p>
-            <p className="caption">Onde podemos buscar: {i.source}</p>
-          </div>
-        )) : <p>Precisamos esclarecer seu objetivo antes de escolher os números mais importantes.</p>}
-      </section>
-
-      {map.ambiguities.length > 0 && (
-        <section>
-          <h3>Antes de avançar, precisamos confirmar</h3>
-          <ul>{map.ambiguities.map((a) => <li key={a}>{a}</li>)}</ul>
+        <section className="panel">
+          <p className="eyebrow">SEU FOCO</p>
+          <h3>{map.text('v3_p1_focus')}</h3>
+          <p><strong>Meta:</strong> {map.text('v3_p4_goal')}</p>
+          <p><strong>Prazo:</strong> {map.text('v3_p5_deadline')}</p>
+          <p><strong>O que mais pode estar travando:</strong> {map.text('v3_p6_blockers')}</p>
         </section>
-      )}
 
-      <details>
-        <summary>Ver respostas do questionário</summary>
-        {answers.filter((a) => a.question_id !== 'v3_p10_confirm').map((a) => (
-          <div className="list-row" key={a.question_id}>
-            <div><strong>{v3Questions.find((q) => q.id === a.question_id)?.title}</strong><p>{displayV3Answer(a)}</p></div>
-            <span className="badge">{answerStatus(a)}</span>
+        <PerceptionChart radar={map.radar} />
+
+        <section className="panel">
+          <p className="eyebrow">2 · O QUE VOCÊ NOS CONTOU</p>
+          <h3>O cenário que vamos investigar</h3>
+          <p><strong>Situação:</strong> {map.text('v3_p2_example')}</p>
+          <p><strong>Impacto:</strong> {map.text('v3_p3_impact')}</p>
+          <p><strong>Fonte disponível:</strong> {map.text('v3_p9_evidence')}</p>
+        </section>
+
+        <StatusSummary available={available} missing={missing} />
+
+        <section>
+          <p className="eyebrow">4 · OS NÚMEROS QUE VÃO NOS AJUDAR</p>
+          <h3>Você não precisa saber o nome técnico deles</h3>
+          <p className="muted">O DuoMente escolheu estes números porque eles ajudam a responder se você está avançando em direção à sua meta.</p>
+          <div className="grid-2">
+            {map.indicators.length ? map.indicators.map((i) => (
+              <article className="panel" key={i.key}>
+                <span className="badge">{i.status === 'Faltante' ? 'Precisamos buscar' : 'Você disse que acompanha'}</span>
+                <h4>{i.name}</h4>
+                <p>{i.why}</p>
+                <p className="caption">Podemos buscar em: {i.source}</p>
+              </article>
+            )) : <p>Precisamos esclarecer melhor seu objetivo antes de escolher os números mais importantes.</p>}
           </div>
-        ))}
-      </details>
+        </section>
+
+        <section className="panel">
+          <p className="eyebrow">5 · PRÓXIMO PASSO</p>
+          <h3>Agora vamos transformar percepção em dados.</h3>
+          {missing > 0 ? (
+            <p>Existem {missing} informações importantes que ainda precisamos buscar. Comece pelas fontes que você já possui; depois o DuoMente poderá conectar sistemas e acompanhar esses números continuamente.</p>
+          ) : (
+            <p>Você declarou acompanhar os principais números identificados. O próximo passo é validar os valores e períodos para começar o acompanhamento.</p>
+          )}
+          <p><strong>Primeira regra:</strong> ainda não vamos recomendar ações estratégicas só com base na sua percepção. Primeiro validamos os dados que podem mudar a decisão.</p>
+        </section>
+
+        {map.ambiguities.length > 0 && (
+          <section className="panel">
+            <p className="eyebrow">PRECISAMOS CONFIRMAR</p>
+            <ul>{map.ambiguities.map((a) => <li key={a}>{a}</li>)}</ul>
+          </section>
+        )}
+
+        <details>
+          <summary>Ver detalhes e respostas do questionário</summary>
+          <p><strong>Dados que você afirma acompanhar:</strong> {map.declaredData.join(', ') || 'Nenhum informado'}.</p>
+          {map.unknowns.length > 0 && <><h4>Ainda não sabemos</h4><ul>{map.unknowns.map((a) => <li key={a.question_id}>{v3Questions.find((q) => q.id === a.question_id)?.title} — a descobrir.</li>)}</ul></>}
+          {answers.filter((a) => a.question_id !== 'v3_p10_confirm').map((a) => (
+            <div className="list-row" key={a.question_id}>
+              <div><strong>{v3Questions.find((q) => q.id === a.question_id)?.title}</strong><p>{displayV3Answer(a)}</p></div>
+              <span className="badge">{answerStatus(a)}</span>
+            </div>
+          ))}
+        </details>
+      </section>
     </section>
   );
 }
