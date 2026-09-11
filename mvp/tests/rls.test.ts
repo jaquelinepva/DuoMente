@@ -1,6 +1,7 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
+import { v3Questions } from '../src/lib/diagnostic-v3';
 const pg = new PGlite();
 const ownerA = '10000000-0000-4000-8000-000000000001',
   ownerB = '10000000-0000-4000-8000-000000000002',
@@ -69,6 +70,75 @@ beforeAll(async () => {
   );
 });
 afterAll(() => pg.close());
+it('migra a confirmação v3, preserva respostas e permite nova sessão sem relatório fictício', async () => {
+  const org = (
+    await asUser(ownerA, () =>
+      pg.query<{ id: number }>(
+        "select public.create_duomente_organization('Teste de reinício','Serviços') id",
+      ),
+    )
+  ).rows[0].id;
+  const old = (
+    await asUser(ownerA, () =>
+      pg.query<{ id: string }>(
+        'insert into diagnostic_sessions(organization_id) values($1) returning id',
+        [org],
+      ),
+    )
+  ).rows[0].id;
+  for (const q of v3Questions) {
+    await asUser(ownerA, () =>
+      pg.query(
+        'insert into diagnostic_answers(organization_id,session_id,question_id,answer,is_draft) values($1,$2,$3,$4,false)',
+        [org, old, q.id, q.kind === 'confirm' ? 'confirmed' : 'Resposta de teste'],
+      ),
+    );
+  }
+  await pg.exec(
+    readFileSync(
+      new URL(
+        '../supabase/migrations/20260911235000_initial_map_confirmation.sql',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
+  const repaired = (
+    await pg.query<{ status: string; report: unknown; initial_map_confirmed_at: unknown }>(
+      'select status,report,initial_map_confirmed_at from diagnostic_sessions where id=$1',
+      [old],
+    )
+  ).rows[0];
+  expect(repaired.status).toBe('completed');
+  expect(repaired.report).toBeNull();
+  expect(repaired.initial_map_confirmed_at).not.toBeNull();
+  const fresh = (
+    await asUser(ownerA, () =>
+      pg.query<{ id: string }>(
+        'insert into diagnostic_sessions(organization_id) values($1) returning id',
+        [org],
+      ),
+    )
+  ).rows[0].id;
+  expect(fresh).not.toBe(old);
+  expect(
+    (await pg.query('select * from diagnostic_answers where session_id=$1', [old])).rows,
+  ).toHaveLength(10);
+  expect(
+    (await pg.query('select * from diagnostic_answers where session_id=$1', [fresh])).rows,
+  ).toHaveLength(0);
+  await expect(
+    asUser(ownerA, () =>
+      pg.query("update diagnostic_sessions set status='completed' where id=$1", [fresh]),
+    ),
+  ).rejects.toThrow();
+  await asUser(ownerA, () =>
+    pg.query(
+      "update diagnostic_sessions set status='completed',initial_map_confirmed_at=now() where id=$1",
+      [fresh],
+    ),
+  );
+});
 describe('RLS real em PostgreSQL local', () => {
   it('cada proprietário lê somente sua organização', async () => {
     const rows = await asUser(

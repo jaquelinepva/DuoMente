@@ -98,9 +98,10 @@ export async function saveV3Answer(input: {
     .maybeSingle();
   check(existingError);
 
+  const unknown = isUnknownAnswer(value);
   const answerData = {
-    answer: value.unknown ? 'N/D' : value.answer,
-    unknown: isUnknownAnswer(value),
+    answer: unknown ? 'N/D' : value.answer,
+    unknown,
     is_draft: false,
   };
 
@@ -136,6 +137,7 @@ export async function saveV3Answer(input: {
         .from('diagnostic_sessions')
         .update({
           status: willComplete ? 'completed' : 'in_progress',
+          initial_map_confirmed_at: willComplete ? new Date().toISOString() : null,
           report: null,
           report_approved_at: null,
         })
