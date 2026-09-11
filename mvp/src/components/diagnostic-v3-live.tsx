@@ -19,7 +19,7 @@ const dataOptions = [
 ];
 const labels: Record<string,string> = {
   v3_p1_focus:'Principal preocupação',v3_p2_example:'Exemplo informado',v3_p3_impact:'Impacto estimado',v3_p4_goal:'Situação atual e objetivo',
-  v3_p5_deadline:'Prazo desejado',v3_p6_blockers:'Bloqueios percebidos',v3_p7_radar:'Percepção das quatro áreas',v3_p8_data:'Dados acompanhados',v3_p9_evidence:'Fontes/evidências',
+  v3_p5_deadline:'Prazo desejado',v3_p6_blockers:'Bloqueios percebidos',v3_p7_radar:'Percepção inicial da empresa',v3_p8_data:'Dados acompanhados',v3_p9_evidence:'Fontes/evidências',
 };
 function display(a: V3Answer) {
   if (a.unknown) return 'Não sei / dado ainda ausente';
@@ -60,7 +60,20 @@ export function DiagnosticV3Live({sessionId,question,answers,readOnly}:{sessionI
     if(question.kind==='data') return selected.length>0;
     return true;
   }
-  async function submit(unknown=false){ setPending(true); setMessage('Salvando…'); try{await saveV3Answer({session_id:sessionId,question_id:question.id,answer:unknown?'':answer(),unknown}); router.refresh();}catch(e){setMessage(e instanceof Error?e.message:'Não foi possível salvar.');}finally{setPending(false);} }
+  async function submit(unknown=false){
+    if(pending) return;
+    setPending(true); setMessage('Salvando…');
+    try{
+      const result=await saveV3Answer({session_id:sessionId,question_id:question.id,answer:unknown?'':answer(),unknown});
+      if(result.completed){
+        // A confirmação final muda o estado da sessão no servidor. Um reload completo evita
+        // uma segunda transição concorrente de Server Components, que em produção aparecia como React #441.
+        window.location.assign('/app/diagnostico');
+        return;
+      }
+      router.refresh();
+    }catch(e){setMessage(e instanceof Error?e.message:'Não foi possível salvar.'); setPending(false);}
+  }
   async function pause(){const f=new FormData();f.set('id',sessionId);setPending(true);try{await pauseDiagnostic(f);}catch(e){setMessage(e instanceof Error?e.message:'Não foi possível pausar.');setPending(false);}}
   return <section className="question">
     <p className="eyebrow">Pergunta {question.step} de 10</p><h2>{question.title}</h2><p className="muted">{question.help}</p>
