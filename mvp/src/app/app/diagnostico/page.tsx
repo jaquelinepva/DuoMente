@@ -13,8 +13,10 @@ export default async function Page() {
     .select('*')
     .eq('organization_id', org)
     .order('created_at', { ascending: false })
-    .limit(1);
+    .limit(2);
   const session = sessions?.[0];
+  const previousSession = sessions?.[1];
+
   const { data: answers } = session
     ? await client
         .from('diagnostic_answers')
@@ -27,8 +29,25 @@ export default async function Page() {
   const completed = answers?.filter((a) => !a.is_draft) ?? [];
   const v3Answers = completed.filter((a) => isV3QuestionId(a.question_id));
   const legacyAnswers = completed.filter((a) => !isV3QuestionId(a.question_id));
-  const hasV3 = v3Answers.length > 0;
+
+  // Uma sessão v3 recém-criada ainda não possui respostas. Antes desta regra,
+  // ela era confundida com uma sessão sem versão e a primeira tela nunca abria.
+  // Quando há uma sessão anterior, uma sessão mais recente vazia criada pelo fluxo v3
+  // deve começar diretamente em P1. Também aceitamos v3 explicitamente quando já há respostas v3.
+  const isFreshV3Session = !!session && completed.length === 0 && !!previousSession;
+  const hasV3 = isFreshV3Session || v3Answers.length > 0;
   const q = hasV3 ? nextV3Question(v3Answers) : undefined;
+
+  let preservedLegacyCount = legacyAnswers.length;
+  if (isFreshV3Session && previousSession) {
+    const { data: previousAnswers } = await client
+      .from('diagnostic_answers')
+      .select('question_id,is_draft')
+      .eq('organization_id', org)
+      .eq('session_id', previousSession.id);
+    preservedLegacyCount =
+      previousAnswers?.filter((a) => !a.is_draft && !isV3QuestionId(a.question_id)).length ?? 0;
+  }
 
   const { data: evidence } = await client
     .from('evidence_items')
@@ -46,11 +65,11 @@ export default async function Page() {
         </p>
       </div>
 
-      {!session || (!hasV3 && legacyAnswers.length === 0) ? (
+      {!session ? (
         <ActionForm action={startV3Diagnostic} label="Iniciar Diagnóstico v3">
           <p>Você não precisa conhecer indicadores. Conte o que quer alcançar e o DuoMente organiza o que precisa ser medido.</p>
         </ActionForm>
-      ) : !hasV3 ? (
+      ) : !hasV3 && legacyAnswers.length > 0 ? (
         <section className="panel">
           <p className="eyebrow">HISTÓRICO PRESERVADO</p>
           <h2>Seu diagnóstico anterior continua intacto.</h2>
@@ -61,8 +80,11 @@ export default async function Page() {
             <p>O novo diagnóstico será criado em uma sessão separada para permitir comparação posterior.</p>
           </ActionForm>
         </section>
-      ) : (
+      ) : hasV3 ? (
         <>
+          {isFreshV3Session && preservedLegacyCount > 0 && (
+            <p className="caption">Histórico preservado: {preservedLegacyCount} respostas anteriores permanecem intactas.</p>
+          )}
           <progress value={v3Progress(v3Answers)} max={10} aria-label="Progresso do Diagnóstico v3" />
           {session.status === 'completed' || !q ? (
             <section className="panel">
@@ -94,6 +116,10 @@ export default async function Page() {
             />
           )}
         </>
+      ) : (
+        <ActionForm action={startV3Diagnostic} label="Iniciar Diagnóstico v3">
+          <p>Vamos iniciar uma nova sessão do diagnóstico em linguagem simples.</p>
+        </ActionForm>
       )}
 
       {role !== 'viewer' && (
