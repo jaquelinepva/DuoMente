@@ -4,15 +4,33 @@ import { generateText, Output } from 'ai';
 import { reportSchema, validateReferences } from '@/lib/domain';
 
 export const PROMPT_VERSION = 'diagnostic-v2';
+
+function aiConfig() {
+  const providerName = (process.env.AI_PROVIDER || '').toLowerCase();
+  const openRouter = providerName === 'openrouter' || !!process.env.OPENROUTER_API_KEY;
+  const apiKey =
+    process.env.AI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('AI_NOT_CONFIGURED');
+
+  return {
+    apiKey,
+    baseURL:
+      process.env.AI_BASE_URL || (openRouter ? 'https://openrouter.ai/api/v1' : undefined),
+    model:
+      process.env.AI_MODEL ||
+      process.env.OPENAI_MODEL ||
+      (openRouter ? 'openai/gpt-4.1-mini' : 'gpt-4.1-mini'),
+  };
+}
+
 export async function generateExecutiveReport(
   context: unknown,
   evidence: { id: string; classification: string }[],
 ) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('AI_NOT_CONFIGURED');
-  const provider = createOpenAI({ apiKey });
+  const config = aiConfig();
+  const provider = createOpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
   const { output } = await generateText({
-    model: provider.responses(process.env.OPENAI_MODEL || 'gpt-4.1-mini'),
+    model: provider.responses(config.model),
     output: Output.object({ schema: reportSchema }),
     maxOutputTokens: 10000,
     maxRetries: 1,
