@@ -8,6 +8,12 @@ const perceptionText: Record<string, string> = {
   Cinza: 'Você ainda não sabe avaliar.',
 };
 const perceptionWidth: Record<string, number> = { Verde: 100, Amarelo: 66, Vermelho: 33, Cinza: 8 };
+const perceptionColor: Record<string, string> = {
+  Verde: '#2f855a',
+  Amarelo: '#d69e2e',
+  Vermelho: '#c53030',
+  Cinza: '#a0aec0',
+};
 
 function PerceptionChart({ radar }: { radar: Array<{ label: string; perception: string }> }) {
   return (
@@ -24,7 +30,7 @@ function PerceptionChart({ radar }: { radar: Array<{ label: string; perception: 
             <span className="badge">{area.perception === 'Cinza' ? 'Não sei avaliar' : area.perception}</span>
           </div>
           <div style={{ height: 14, borderRadius: 999, background: '#e8e4dc', overflow: 'hidden' }} aria-label={`${area.label}: ${area.perception}`}>
-            <div style={{ width: `${perceptionWidth[area.perception] ?? 8}%`, height: '100%', borderRadius: 999, background: 'currentColor' }} />
+            <div style={{ width: `${perceptionWidth[area.perception] ?? 8}%`, height: '100%', borderRadius: 999, background: perceptionColor[area.perception] ?? '#a0aec0' }} />
           </div>
           <p className="caption">{perceptionText[area.perception]}</p>
         </div>
@@ -34,32 +40,40 @@ function PerceptionChart({ radar }: { radar: Array<{ label: string; perception: 
   );
 }
 
-function StatusSummary({ available, missing }: { available: number; missing: number }) {
-  const total = available + missing;
-  const pct = total ? Math.round((available / total) * 100) : 0;
+function StatusSummary({ sourced, missing }: { sourced: number; missing: number }) {
+  const total = sourced + missing;
   return (
     <section className="panel stack">
-      <p className="eyebrow">3 · O QUE JÁ CONSEGUIMOS MEDIR</p>
-      <h3>{available} de {total || 0} números importantes já foram informados</h3>
-      <div style={{ height: 16, borderRadius: 999, background: '#e8e4dc', overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, background: 'currentColor' }} />
+      <p className="eyebrow">3 · O QUE JÁ TEMOS COMO FONTE</p>
+      <h3>{sourced} de {total || 0} informações importantes têm uma fonte declarada</h3>
+      <div className="grid-2">
+        <div className="panel">
+          <strong>Fonte declarada</strong>
+          <p>{sourced}</p>
+          <p className="caption">Você disse que acompanha ou possui essa informação.</p>
+        </div>
+        <div className="panel">
+          <strong>Ainda sem fonte</strong>
+          <p>{missing}</p>
+          <p className="caption">Ainda precisamos descobrir de onde esse dado virá.</p>
+        </div>
       </div>
-      <p className="muted">Isso não significa que {pct}% da empresa está bem. Significa apenas quanto da informação necessária para decidir já está disponível para validação.</p>
+      <p className="muted"><strong>Importante:</strong> declarar que acompanha um número não significa que o valor já foi recebido nem validado pelo DuoMente.</p>
     </section>
   );
 }
 
 export function InitialMap({ answers }: { answers: V3Answer[] }) {
   const map = buildInitialMap(answers);
-  const available = map.indicators.filter((i) => i.status !== 'Faltante').length;
-  const missing = map.indicators.filter((i) => i.status === 'Faltante').length;
+  const sourced = map.indicators.filter((i) => i.status === 'Fonte declarada — valor não recebido').length;
+  const missing = map.indicators.filter((i) => i.status === 'Sem fonte declarada').length;
   return (
     <section className="stack">
       <section className="panel stack">
         <div>
           <p className="eyebrow">MAPA INICIAL DUOMENTE</p>
           <h2>Agora você já tem um ponto de partida.</h2>
-          <p>Não precisa interpretar o questionário. O DuoMente vai transformar suas respostas em objetivo, sinais visuais, números necessários e próximos passos.</p>
+          <p>Não precisa interpretar o questionário. O DuoMente vai transformar suas respostas em objetivo, sinais visuais, informações necessárias e próximos passos.</p>
         </div>
 
         <section className="panel">
@@ -80,7 +94,7 @@ export function InitialMap({ answers }: { answers: V3Answer[] }) {
           <p><strong>Fonte disponível:</strong> {map.text('v3_p9_evidence')}</p>
         </section>
 
-        <StatusSummary available={available} missing={missing} />
+        <StatusSummary sourced={sourced} missing={missing} />
 
         <section>
           <p className="eyebrow">4 · OS NÚMEROS QUE VÃO NOS AJUDAR</p>
@@ -89,10 +103,10 @@ export function InitialMap({ answers }: { answers: V3Answer[] }) {
           <div className="grid-2">
             {map.indicators.length ? map.indicators.map((i) => (
               <article className="panel" key={i.key}>
-                <span className="badge">{i.status === 'Faltante' ? 'Precisamos buscar' : 'Você disse que acompanha'}</span>
+                <span className="badge">{i.status === 'Sem fonte declarada' ? 'Precisamos descobrir a fonte' : 'Fonte declarada · valor ainda não recebido'}</span>
                 <h4>{i.name}</h4>
                 <p>{i.why}</p>
-                <p className="caption">Podemos buscar em: {i.source}</p>
+                <p className="caption">Onde podemos buscar: {i.source}</p>
               </article>
             )) : <p>Precisamos esclarecer melhor seu objetivo antes de escolher os números mais importantes.</p>}
           </div>
@@ -102,9 +116,9 @@ export function InitialMap({ answers }: { answers: V3Answer[] }) {
           <p className="eyebrow">5 · PRÓXIMO PASSO</p>
           <h3>Agora vamos transformar percepção em dados.</h3>
           {missing > 0 ? (
-            <p>Existem {missing} informações importantes que ainda precisamos buscar. Comece pelas fontes que você já possui; depois o DuoMente poderá conectar sistemas e acompanhar esses números continuamente.</p>
+            <p>Existem {missing} informações importantes ainda sem uma fonte declarada. Primeiro vamos identificar de onde elas podem vir; depois validaremos os valores.</p>
           ) : (
-            <p>Você declarou acompanhar os principais números identificados. O próximo passo é validar os valores e períodos para começar o acompanhamento.</p>
+            <p>Você já declarou fontes para os principais números identificados. O próximo passo é receber e validar os valores antes de usá-los em decisões.</p>
           )}
           <p><strong>Primeira regra:</strong> ainda não vamos recomendar ações estratégicas só com base na sua percepção. Primeiro validamos os dados que podem mudar a decisão.</p>
         </section>
