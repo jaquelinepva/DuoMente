@@ -67,6 +67,7 @@ export function InitialMap({ answers }: { answers: V3Answer[] }) {
   const map = buildInitialMap(answers);
   const sourced = map.indicators.filter((i) => i.status === 'Fonte declarada — valor não recebido').length;
   const missing = map.indicators.filter((i) => i.status === 'Sem fonte declarada').length;
+  const missingLabel = missing === 1 ? 'informação importante' : 'informações importantes';
   return (
     <section className="stack">
       <section className="panel stack">
@@ -116,7 +117,7 @@ export function InitialMap({ answers }: { answers: V3Answer[] }) {
           <p className="eyebrow">5 · PRÓXIMO PASSO</p>
           <h3>Agora vamos transformar percepção em dados.</h3>
           {missing > 0 ? (
-            <p>Existem {missing} informações importantes ainda sem uma fonte declarada. Primeiro vamos identificar de onde elas podem vir; depois validaremos os valores.</p>
+            <p>{missing === 1 ? 'Existe' : 'Existem'} {missing} {missingLabel} ainda {missing === 1 ? 'sem' : 'sem'} uma fonte declarada. Primeiro vamos identificar de onde {missing === 1 ? 'ela pode' : 'elas podem'} vir; depois validaremos os valores.</p>
           ) : (
             <p>Você já declarou fontes para os principais números identificados. O próximo passo é receber e validar os valores antes de usá-los em decisões.</p>
           )}
