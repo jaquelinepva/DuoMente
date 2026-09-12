@@ -22,8 +22,6 @@ export default async function Page() {
     is_draft: boolean;
   }> = [];
 
-  // A interface v3 ignora completamente sessões legadas. Elas continuam no banco apenas
-  // para auditoria/comparação e nunca mais são exibidas ao empresário.
   for (const candidate of sessions ?? []) {
     const { data: candidateAnswers } = await client
       .from('diagnostic_answers')
@@ -41,15 +39,21 @@ export default async function Page() {
 
   const completed = answers.filter((a) => !a.is_draft && isV3QuestionId(a.question_id));
   const q = session ? nextV3Question(completed) : undefined;
+  const { data: indicatorData } = session
+    ? await client
+        .from('indicator_data_points')
+        .select('indicator_key,source_type,source_label,value_text,period_label,status,validated_at')
+        .eq('organization_id', org)
+        .eq('diagnostic_session_id', session.id)
+        .order('created_at', { ascending: false })
+    : { data: [] };
 
   return (
     <>
       <div className="page-heading">
         <p className="eyebrow">DIAGNÓSTICO DUOMENTE</p>
         <h1>Vamos entender o que precisa mudar agora.</h1>
-        <p className="muted">
-          São 10 etapas simples. Você não precisa conhecer indicadores, gestão ou termos técnicos.
-        </p>
+        <p className="muted">São 10 etapas simples. Você não precisa conhecer indicadores, gestão ou termos técnicos.</p>
       </div>
 
       {!session ? (
@@ -63,26 +67,22 @@ export default async function Page() {
           <progress value={v3Progress(completed)} max={10} aria-label="Progresso do diagnóstico" />
           {session.status === 'completed' || !q ? (
             <>
-              <InitialMap answers={completed} />
+              <InitialMap
+                answers={completed}
+                sessionId={session.id}
+                readOnly={role === 'viewer'}
+                dataPoints={indicatorData ?? []}
+              />
               {role !== 'viewer' && (
                 <section className="panel">
                   <h2>Quer fazer um novo diagnóstico?</h2>
-                  <p>
-                    Comece novamente pela pergunta 1. As respostas anteriores ficam preservadas no
-                    histórico.
-                  </p>
+                  <p>Comece novamente pela pergunta 1. As respostas anteriores ficam preservadas no histórico.</p>
                   <StartV3Diagnostic label="Iniciar novo diagnóstico" />
                 </section>
               )}
             </>
           ) : (
-            <DiagnosticV3Live
-              key={q.id}
-              sessionId={session.id}
-              question={q}
-              answers={completed}
-              readOnly={role === 'viewer'}
-            />
+            <DiagnosticV3Live key={q.id} sessionId={session.id} question={q} answers={completed} readOnly={role === 'viewer'} />
           )}
         </>
       )}
