@@ -42,7 +42,9 @@ export default async function Page() {
   const { data: indicatorData } = session
     ? await client
         .from('indicator_data_points')
-        .select('indicator_key,source_type,source_label,value_text,period_label,status,validated_at,storage_path')
+        .select(
+          'indicator_key,source_type,source_label,value_text,period_label,status,validated_at,storage_path',
+        )
         .eq('organization_id', org)
         .eq('diagnostic_session_id', session.id)
         .order('created_at', { ascending: false })
@@ -50,11 +52,15 @@ export default async function Page() {
 
   return (
     <>
-      <div className="page-heading">
-        <p className="eyebrow">DIAGNÓSTICO DUOMENTE</p>
-        <h1>Vamos entender o que precisa mudar agora.</h1>
-        <p className="muted">São 10 etapas simples. Você não precisa conhecer indicadores, gestão ou termos técnicos.</p>
-      </div>
+      {(!session || (q && session.status !== 'completed')) && (
+        <div className="page-heading">
+          <p className="eyebrow">DIAGNÓSTICO DUOMENTE</p>
+          <h1>Vamos entender o que precisa mudar agora.</h1>
+          <p className="muted">
+            São 10 etapas simples. Você não precisa conhecer indicadores, gestão ou termos técnicos.
+          </p>
+        </div>
+      )}
 
       {!session ? (
         <section className="panel">
@@ -64,7 +70,13 @@ export default async function Page() {
         </section>
       ) : (
         <>
-          <progress value={v3Progress(completed)} max={10} aria-label="Progresso do diagnóstico" />
+          {q && session.status !== 'completed' && (
+            <progress
+              value={v3Progress(completed)}
+              max={10}
+              aria-label="Progresso do diagnóstico"
+            />
+          )}
           {session.status === 'completed' || !q ? (
             <>
               <InitialMap
@@ -74,15 +86,24 @@ export default async function Page() {
                 dataPoints={indicatorData ?? []}
               />
               {role !== 'viewer' && (
-                <section className="panel">
-                  <h2>Quer fazer um novo diagnóstico?</h2>
-                  <p>Comece novamente pela pergunta 1. As respostas anteriores ficam preservadas no histórico.</p>
+                <details className="panel" style={{ marginTop: 24 }}>
+                  <summary>Iniciar outro diagnóstico</summary>
+                  <p>
+                    Comece novamente pela pergunta 1. As respostas anteriores ficam preservadas no
+                    histórico.
+                  </p>
                   <StartV3Diagnostic label="Iniciar novo diagnóstico" />
-                </section>
+                </details>
               )}
             </>
           ) : (
-            <DiagnosticV3Live key={q.id} sessionId={session.id} question={q} answers={completed} readOnly={role === 'viewer'} />
+            <DiagnosticV3Live
+              key={q.id}
+              sessionId={session.id}
+              question={q}
+              answers={completed}
+              readOnly={role === 'viewer'}
+            />
           )}
         </>
       )}
