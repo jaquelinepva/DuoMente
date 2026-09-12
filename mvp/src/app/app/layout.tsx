@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { db } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -14,8 +15,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Link className="brand" href="/app">
-          <span className="brand-mark">d.</span>DuoMente
+        <Link className="brand" href="/app" aria-label="DuoMente — início">
+          <Image src="/duomente-logo.svg" alt="DuoMente — Decisão Inteligente" width={246} height={64} priority />
         </Link>
         <nav aria-label="Menu principal">
           {[
