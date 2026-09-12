@@ -42,7 +42,7 @@ export default async function Page() {
   const { data: indicatorData } = session
     ? await client
         .from('indicator_data_points')
-        .select('indicator_key,source_type,source_label,value_text,period_label,status,validated_at')
+        .select('indicator_key,source_type,source_label,value_text,period_label,status,validated_at,storage_path')
         .eq('organization_id', org)
         .eq('diagnostic_session_id', session.id)
         .order('created_at', { ascending: false })
