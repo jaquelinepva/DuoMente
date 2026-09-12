@@ -88,11 +88,7 @@ export function goalAmbiguities(answer: string) {
   const result: string[] = [];
   if (number(p.data.target) === null)
     result.push('Confirme o valor numérico da meta antes de usá-la em cálculos.');
-  // Campos legados só entram na checagem quando realmente existem. A interface atual não os expõe.
-  if (p.data.current && number(p.data.current) === null)
-    result.push('Confirme o valor numérico da situação atual antes de calcular a diferença para a meta.');
-  if (p.data.unit && /\d/.test(p.data.unit))
-    result.push('A unidade antiga contém um valor misturado e será ignorada até ser corrigida.');
+  // Campos legados podem permanecer no banco para compatibilidade, mas não geram avisos técnicos ao empresário.
   return result;
 }
 
