@@ -9,29 +9,37 @@ create table public.indicator_data_points (
   value_text text,
   period_label text,
   status text not null default 'received' check (status in ('received','validated','rejected')),
-  created_by uuid not null references auth.users(id),
+  created_by uuid not null default auth.uid() references auth.users(id),
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   validated_at timestamptz,
   unique (organization_id, diagnostic_session_id, indicator_key, source_type)
 );
 
 alter table public.indicator_data_points enable row level security;
+grant select, insert, update on public.indicator_data_points to authenticated;
 
-create policy indicator_data_points_select_member on public.indicator_data_points
-for select using (public.is_org_member(organization_id));
+create policy indicator_data_points_read on public.indicator_data_points
+for select to authenticated
+using (duomente_private.member_role(organization_id) is not null);
 
-create policy indicator_data_points_insert_editor on public.indicator_data_points
-for insert with check (
-  public.can_edit_org(organization_id)
-  and created_by = auth.uid()
+create policy indicator_data_points_insert on public.indicator_data_points
+for insert to authenticated
+with check (
+  duomente_private.member_role(organization_id) in ('owner','admin','manager','collaborator')
+  and created_by = (select auth.uid())
 );
 
-create policy indicator_data_points_update_editor on public.indicator_data_points
-for update using (public.can_edit_org(organization_id))
-with check (public.can_edit_org(organization_id));
-
-create policy indicator_data_points_delete_admin on public.indicator_data_points
-for delete using (public.is_org_admin(organization_id));
+create policy indicator_data_points_update on public.indicator_data_points
+for update to authenticated
+using (duomente_private.member_role(organization_id) in ('owner','admin','manager','collaborator'))
+with check (duomente_private.member_role(organization_id) in ('owner','admin','manager','collaborator'));
 
 create index indicator_data_points_org_session_idx
   on public.indicator_data_points(organization_id, diagnostic_session_id);
+
+create trigger duomente_touch before update on public.indicator_data_points
+for each row execute function duomente_private.touch_record();
+
+create trigger duomente_audit after insert or update or delete on public.indicator_data_points
+for each row execute function duomente_private.audit_record();
