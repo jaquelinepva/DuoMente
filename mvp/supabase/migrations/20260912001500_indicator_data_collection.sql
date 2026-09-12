@@ -1,7 +1,7 @@
 -- Marco 3: coleta e validação de dados ligados aos indicadores do Mapa Inicial.
 create table public.indicator_data_points (
   id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
+  organization_id bigint not null references public.organizations(id) on delete cascade,
   diagnostic_session_id uuid not null references public.diagnostic_sessions(id) on delete cascade,
   indicator_key text not null,
   source_type text not null check (source_type in ('manual','file','system')),
