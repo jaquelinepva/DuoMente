@@ -28,7 +28,7 @@ describe('Mapa Inicial', () => {
     expect(html).not.toContain('&quot;mode&quot;');
     expect(html).toContain('Ainda não sabemos');
   });
-  it('preserva unidade legada ambígua sem expô-la como meta', () => {
+  it('preserva unidade legada ambígua sem expô-la ao empresário', () => {
     const legacy = answer('v3_p4_goal', {
       current: '10000',
       target: '50000',
@@ -37,8 +37,11 @@ describe('Mapa Inicial', () => {
     });
     const map = buildInitialMap([legacy]);
     expect(map.gap).toBeNull();
-    expect(map.ambiguities.join(' ')).toContain('unidade antiga');
+    expect(map.ambiguities.join(' ')).not.toContain('unidade antiga');
     expect(displayV3Answer(legacy)).toBe('50000');
+    const html = renderToStaticMarkup(createElement(InitialMap, { answers: [legacy] }));
+    expect(html).not.toContain('unidade antiga');
+    expect(html).not.toContain('R$50000');
   });
   it('calcula apenas diferença declarada legada com valores e unidade inequívocos', () => {
     const map = buildInitialMap([
