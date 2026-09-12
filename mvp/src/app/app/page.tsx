@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { context } from '@/lib/context';
-import { activeQuestions, nextQuestion } from '@/lib/domain';
+import { nextV3Question, v3Progress, v3Questions, type V3Answer } from '@/lib/diagnostic-v3';
 import { dateBR } from '@/lib/utils';
 export default async function Home() {
   const { client, org, role } = await context();
@@ -12,7 +12,7 @@ export default async function Home() {
         .select('*')
         .eq('organization_id', org)
         .order('created_at', { ascending: false })
-        .limit(1),
+        .limit(5),
       client
         .from('decisions')
         .select('*')
@@ -26,17 +26,27 @@ export default async function Home() {
         .not('status', 'in', '(Concluída,Cancelada)')
         .order('due_date'),
     ]);
-  const session = sessions?.[0];
-  const { data: answers } = session
-    ? await client
-        .from('diagnostic_answers')
-        .select('question_id,answer,unknown')
-        .eq('organization_id', org)
-        .eq('session_id', session.id)
-        .eq('is_draft', false)
-    : { data: [] };
-  const pending = nextQuestion(answers ?? []);
-  const count = activeQuestions(answers ?? []).length;
+  let session: NonNullable<typeof sessions>[number] | undefined;
+  let answers: V3Answer[] = [];
+  for (const candidate of sessions ?? []) {
+    const { data: rows, error } = await client
+      .from('diagnostic_answers')
+      .select('question_id,answer,unknown,is_draft')
+      .eq('organization_id', org)
+      .eq('session_id', candidate.id);
+    if (error) throw new Error('Não foi possível carregar o progresso do diagnóstico.');
+    if (!rows?.length || rows.some((a) => v3Questions.some((q) => q.id === a.question_id))) {
+      session = candidate;
+      answers = (rows ?? []).filter(
+        (a) => !a.is_draft && v3Questions.some((q) => q.id === a.question_id),
+      );
+      break;
+    }
+  }
+  const pending = nextV3Question(answers);
+  const count = v3Questions.length;
+  const answered = v3Progress(answers);
+  const unknownCount = answers.filter((a) => a.unknown).length;
   return (
     <>
       <div className="page-heading">
@@ -52,52 +62,41 @@ export default async function Home() {
             ? 'Vamos entender o seu negócio.'
             : pending
               ? 'Continue seu diagnóstico.'
-              : session.status !== 'completed'
-                ? 'Revise e confirme seu diagnóstico.'
-                : actions?.length
-                  ? 'Avance nas ações combinadas.'
-                  : 'Transforme prioridades em decisões.'}
+              : 'Seu Mapa Inicial está pronto.'}
         </h2>
         <p>
           {!session
-            ? 'Antes de mostrar números, vamos entender o seu negócio e descobrir quais decisões precisam da sua atenção.'
-            : (pending?.text ?? 'As conclusões relevantes passam pela sua revisão.')}
+            ? 'São 10 etapas para entender seu objetivo e o que precisamos descobrir.'
+            : (pending?.title ??
+              'Confira seu Mapa Inicial e as informações que ainda precisam ser validadas.')}
         </p>
-        <Link
-          className="button"
-          href={
-            !session || pending
-              ? '/app/diagnostico'
-              : session.status !== 'completed'
-                ? '/app/diagnostico/relatorio'
-                : actions?.length
-                  ? '/app/acoes'
-                  : '/app/decisoes'
-          }
-        >
-          {!session ? 'Começar diagnóstico' : 'Ver próximo passo'} →
+        <Link className="button" href="/app/diagnostico">
+          {!session
+            ? 'Começar diagnóstico'
+            : pending
+              ? 'Continuar diagnóstico'
+              : 'Ver Mapa Inicial'}{' '}
+          →
         </Link>
       </section>
       <div className="split">
         <section className="panel">
           <h2>Diagnóstico</h2>
           <p>
-            {answers?.length ?? 0} de {count} perguntas do percurso atual respondidas
+            {answered} de {count} etapas concluídas
           </p>
-          <progress
-            value={answers?.length ?? 0}
-            max={count}
-            aria-label="Progresso do diagnóstico"
-          />
+          <progress value={answered} max={count} aria-label="Progresso do diagnóstico" />
           <p className="caption">
-            O percurso se adapta às suas respostas. Última atualização:{' '}
-            {dateBR(session?.updated_at)}
+            O diagnóstico tem 10 etapas. Última atualização: {dateBR(session?.updated_at)}
           </p>
           <h3>Informações pendentes</h3>
-          {answers?.filter((a) => a.unknown).length ? (
+          {unknownCount > 0 ? (
             <p>
-              {answers.filter((a) => a.unknown).length} respostas registradas como N/D.{' '}
-              <Link href="/app/diagnostico">Registrar evidências</Link>
+              {unknownCount}{' '}
+              {unknownCount === 1
+                ? 'informação ainda a descobrir.'
+                : 'informações ainda a descobrir.'}{' '}
+              <Link href="/app/diagnostico">Ver informações pendentes</Link>
             </p>
           ) : (
             <p className="muted">
