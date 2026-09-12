@@ -11,7 +11,8 @@ import {
 import { type V3Answer } from '../src/lib/diagnostic-v3';
 
 const sessionId = '11111111-1111-4111-8111-111111111111';
-const renderMap = (answers: V3Answer[], dataPoints: Array<{ indicator_key:string; source_type:string; source_label:string|null; value_text:string|null; period_label:string|null; status:string; validated_at:string|null }> = []) =>
+type Point = { indicator_key:string; source_type:string; source_label:string|null; value_text:string|null; period_label:string|null; status:string; validated_at:string|null; storage_path:string|null };
+const renderMap = (answers: V3Answer[], dataPoints: Point[] = []) =>
   renderToStaticMarkup(createElement(InitialMap, { answers, sessionId, readOnly: true, dataPoints }));
 
 const answer = (question_id: string, value: unknown, unknown = false): V3Answer => ({
@@ -77,11 +78,22 @@ describe('Mapa Inicial', () => {
   it('mostra valor recebido sem tratá-lo como validado', () => {
     const html = renderMap(
       [answer('v3_p1_focus', 'Vender/faturar mais')],
-      [{ indicator_key: 'sales', source_type: 'manual', source_label: 'Informado manualmente', value_text: '32000', period_label: 'agosto de 2026', status: 'received', validated_at: null }],
+      [{ indicator_key: 'sales', source_type: 'manual', source_label: 'Informado manualmente', value_text: '32000', period_label: 'agosto de 2026', status: 'received', validated_at: null, storage_path: null }],
     );
     expect(html).toContain('Valor recebido · aguardando validação');
     expect(html).toContain('32000');
     expect(html).toContain('agosto de 2026');
     expect(html).not.toContain('>Validado<');
+  });
+
+  it('mostra arquivo recebido sem fingir que o valor já foi extraído', () => {
+    const html = renderMap(
+      [answer('v3_p1_focus', 'Vender/faturar mais')],
+      [{ indicator_key: 'sales', source_type: 'file', source_label: 'vendas-agosto.csv', value_text: null, period_label: 'agosto de 2026', status: 'received', validated_at: null, storage_path: '1/indicator-data/session/sales/arquivo.csv' }],
+    );
+    expect(html).toContain('Arquivo recebido · aguardando leitura');
+    expect(html).toContain('vendas-agosto.csv');
+    expect(html).toContain('ainda não foi transformado em valor do indicador');
+    expect(html).not.toContain('Valor recebido:');
   });
 });
