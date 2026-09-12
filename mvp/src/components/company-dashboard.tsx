@@ -196,7 +196,7 @@ export function CompanyDashboard({
 }) {
   const [count, setCount] = useState(12);
   const area = areas.find((a) => a.id === initialArea) ?? areas[0];
-  const relevant = points.filter((p) => area.keys.includes(p.indicator_key));
+  const relevant = points.filter((p) => area.keys.some((key) => key === p.indicator_key));
 
   return (
     <div className="company-dashboard">
