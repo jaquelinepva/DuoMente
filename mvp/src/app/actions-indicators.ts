@@ -23,22 +23,42 @@ export async function saveManualIndicatorData(input: z.infer<typeof inputSchema>
     .single();
   if (sessionError || !session) throw new Error('Diagnóstico não encontrado para esta empresa.');
 
-  const { error } = await client.from('indicator_data_points').upsert(
-    {
+  const { data: existing, error: existingError } = await client
+    .from('indicator_data_points')
+    .select('id')
+    .eq('organization_id', org)
+    .eq('diagnostic_session_id', value.session_id)
+    .eq('indicator_key', value.indicator_key)
+    .eq('source_type', 'manual')
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+
+  const payload = {
+    source_label: 'Informado manualmente',
+    value_text: value.value_text.trim(),
+    period_label: value.period_label.trim(),
+    status: 'received',
+    validated_at: null,
+  };
+
+  if (existing) {
+    const { error } = await client
+      .from('indicator_data_points')
+      .update(payload)
+      .eq('id', existing.id)
+      .eq('organization_id', org);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await client.from('indicator_data_points').insert({
+      ...payload,
       organization_id: org,
       diagnostic_session_id: value.session_id,
       indicator_key: value.indicator_key,
       source_type: 'manual',
-      source_label: 'Informado manualmente',
-      value_text: value.value_text.trim(),
-      period_label: value.period_label.trim(),
-      status: 'received',
       created_by: user.id,
-      validated_at: null,
-    },
-    { onConflict: 'organization_id,diagnostic_session_id,indicator_key,source_type' },
-  );
-  if (error) throw new Error(error.message);
+    });
+    if (error) throw new Error(error.message);
+  }
 
   revalidatePath('/app/diagnostico');
   return { ok: true };
