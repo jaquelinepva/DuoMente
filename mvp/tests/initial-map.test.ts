@@ -28,19 +28,19 @@ describe('Mapa Inicial', () => {
     expect(html).not.toContain('&quot;mode&quot;');
     expect(html).toContain('Ainda não sabemos');
   });
-  it('preserva unidade ambígua e não calcula um gap inventado', () => {
-    const map = buildInitialMap([
-      answer('v3_p4_goal', {
-        current: '10000',
-        target: '50000',
-        unit: 'R$50000',
-        period: 'por mês',
-      }),
-    ]);
+  it('preserva unidade legada ambígua sem expô-la como meta', () => {
+    const legacy = answer('v3_p4_goal', {
+      current: '10000',
+      target: '50000',
+      unit: 'R$50000',
+      period: 'por mês',
+    });
+    const map = buildInitialMap([legacy]);
     expect(map.gap).toBeNull();
-    expect(map.ambiguities.join(' ')).toContain('R$50000');
+    expect(map.ambiguities.join(' ')).toContain('unidade antiga');
+    expect(displayV3Answer(legacy)).toBe('50000');
   });
-  it('calcula apenas diferença declarada com valores e unidade inequívocos', () => {
+  it('calcula apenas diferença declarada legada com valores e unidade inequívocos', () => {
     const map = buildInitialMap([
       answer('v3_p4_goal', { current: '10.000', target: '50.000', unit: 'R$', period: 'por mês' }),
     ]);
@@ -53,9 +53,9 @@ describe('Mapa Inicial', () => {
   ])('seleciona indicadores relacionados ao objetivo %s', (focus, keys) => {
     const map = buildInitialMap([answer('v3_p1_focus', focus)]);
     expect(map.indicators.map((i) => i.key)).toEqual(keys);
-    expect(map.indicators.every((i) => i.status === 'Faltante')).toBe(true);
+    expect(map.indicators.every((i) => i.status === 'Sem fonte declarada')).toBe(true);
   });
-  it('não transforma existência declarada nem radar em fato validado', () => {
+  it('não transforma fonte declarada nem radar em fato validado', () => {
     const map = buildInitialMap([
       answer('v3_p1_focus', 'Vender/faturar mais'),
       answer('v3_p8_data', { selected: ['Faturamento/vendas do mês'] }),
@@ -66,8 +66,8 @@ describe('Mapa Inicial', () => {
         people: 'Amarelo',
       }),
     ]);
-    expect(map.indicators[0].status).toBe('Declarado — aguardando validação');
-    expect(map.indicators[1].status).toBe('Faltante');
+    expect(map.indicators[0].status).toBe('Fonte declarada — valor não recebido');
+    expect(map.indicators[1].status).toBe('Sem fonte declarada');
     expect(map.radar[0].perception).toBe('Verde');
     expect(answerStatus(answer('v3_p3_impact', { mode: 'exact', value: '1000', unit: 'R$' }))).toBe(
       'Estimativa declarada',
