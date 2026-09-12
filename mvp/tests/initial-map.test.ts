@@ -12,7 +12,7 @@ import { type V3Answer } from '../src/lib/diagnostic-v3';
 
 const sessionId = '11111111-1111-4111-8111-111111111111';
 const renderMap = (answers: V3Answer[], dataPoints: Array<{ indicator_key:string; source_type:string; source_label:string|null; value_text:string|null; period_label:string|null; status:string; validated_at:string|null }> = []) =>
-  renderToStaticMarkup(createElement(InitialMap, { answers, sessionId, readOnly: true, dataPoints }));
+  renderToStaticMarkup(createElement(InitialMap, { answers, sessionId, readOnly: true, dataPoints: dataPoints.map(point => ({ ...point, storage_path: null })) }));
 
 const answer = (question_id: string, value: unknown, unknown = false): V3Answer => ({
   question_id,

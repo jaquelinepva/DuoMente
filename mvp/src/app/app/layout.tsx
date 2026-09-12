@@ -3,6 +3,7 @@ import { db } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Home, MessagesSquare, ListTodo, Building2, Users, Settings } from 'lucide-react';
 import { signOut } from '@/app/actions';
+import { IntelligenceNavigation } from '@/components/company-dashboard';
 export const dynamic = 'force-dynamic';
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const client = await db();
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
+        <IntelligenceNavigation />
         <p className="sidebar-bottom">
           Entender.
           <br />

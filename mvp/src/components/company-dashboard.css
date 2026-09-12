@@ -1,0 +1,362 @@
+.company-dashboard {
+  --cd-bg: #061422;
+  --cd-panel: #091b2b;
+  --cd-border: #20364a;
+  color: #e6effb;
+  background: var(--cd-bg);
+  padding: 32px;
+  border-radius: 16px;
+  font-family: 'Segoe UI', sans-serif;
+  min-width: 0;
+}
+.cd-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.company-dashboard h1 {
+  font-size: clamp(26px, 3vw, 38px);
+  margin: 8px 0 10px;
+  font-weight: 600;
+}
+.company-dashboard p {
+  color: #a9bcd0;
+  margin: 0;
+  line-height: 1.6;
+}
+.company-dashboard .cd-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: #8db1d0;
+  font-weight: 650;
+}
+.cd-profile,
+.cd-records header > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.cd-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cd-toolbar nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cd-toolbar nav a {
+  text-decoration: none;
+  padding: 9px 13px;
+  border-radius: 7px;
+  color: #acbfd3;
+  font-size: 13px;
+}
+.cd-toolbar nav a[aria-current='page'] {
+  background: #18384f;
+  color: #fff;
+}
+.cd-demo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.cd-demo input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2784fa;
+}
+.company-dashboard .cd-notice {
+  font-size: 12px;
+  border-left: 2px solid #459be0;
+  background: #102337;
+  padding: 10px 14px;
+  margin: 18px 0 24px;
+}
+.cd-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 18px;
+}
+.cd-panel {
+  background: var(--cd-panel);
+  border: 1px solid var(--cd-border);
+  border-radius: 13px;
+  padding: 24px;
+  min-width: 0;
+}
+.cd-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+}
+.company-dashboard h2 {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  margin: 0 0 8px;
+}
+.cd-panel header p {
+  font-size: 13px;
+}
+.cd-period {
+  font-size: 11px;
+  color: #a9bcd0;
+  display: grid;
+  gap: 5px;
+}
+.cd-period select {
+  background: #0a1a2b;
+  color: #dbe8f7;
+  border: 1px solid #2a4259;
+  padding: 6px;
+  border-radius: 6px;
+  width: 106px;
+  font-size: 12px;
+}
+.cd-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 8px;
+}
+.cd-legend span {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.cd-legend i,
+.cd-composition i {
+  width: 11px;
+  height: 11px;
+  display: inline-block;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.cd-chart-wrap {
+  position: relative;
+  margin-top: 12px;
+  min-height: 210px;
+}
+.cd-chart-wrap svg {
+  width: 100%;
+  display: block;
+  min-height: 200px;
+}
+.company-dashboard svg text {
+  fill: #aebfd2;
+  font:
+    12px 'Segoe UI',
+    sans-serif;
+}
+.cd-empty-chart {
+  position: absolute;
+  inset: 30px 40px 35px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  background: #091b2be8;
+  padding: 15px;
+}
+.cd-empty-chart strong {
+  font-size: 15px;
+}
+.cd-empty-chart span {
+  font-size: 12px;
+  color: #a9bcd0;
+  max-width: 330px;
+}
+.cd-empty-chart a {
+  font-size: 12px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  color: #79beff;
+}
+.cd-composition {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 8px;
+  flex-wrap: wrap;
+}
+.cd-composition svg {
+  width: 52%;
+  min-width: 130px;
+  flex: 1;
+}
+.company-dashboard .cd-donut-total {
+  font-size: 25px;
+  font-weight: 600;
+  fill: #edf4ff;
+}
+.cd-composition ul {
+  list-style: none;
+  padding: 0;
+  flex: 1;
+  min-width: 145px;
+  margin: 0;
+}
+.cd-composition li {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 12px;
+  margin: 15px 0;
+}
+.cd-composition li strong {
+  margin-left: auto;
+}
+.company-dashboard .cd-footnote {
+  font-size: 12px;
+  margin-top: 16px;
+}
+.cd-records {
+  margin-top: 20px;
+}
+.cd-table-scroll {
+  overflow-x: auto;
+  margin-top: 22px;
+}
+.company-dashboard table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+.company-dashboard th {
+  font-weight: 500;
+  color: #97b0c8;
+}
+.company-dashboard th,
+.company-dashboard td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #20364a;
+}
+.company-dashboard td {
+  color: #e3edf9;
+}
+.cd-document {
+  display: flex;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid #20364a;
+}
+.cd-document p {
+  font-size: 13px;
+}
+.company-dashboard hr {
+  border: 0;
+  border-top: 1px solid #20364a;
+  margin: 24px 0;
+}
+.company-dashboard h3 {
+  font-size: 17px;
+}
+.company-dashboard a:focus-visible,
+.company-dashboard input:focus-visible,
+.company-dashboard select:focus-visible {
+  outline: 2px solid #8accff;
+  outline-offset: 4px;
+}
+.sidebar .cd-nav-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #688198;
+  margin: 8px 12px;
+}
+.shell:has(.company-dashboard) > .sidebar {
+  background: #071624;
+  color: #c2d2e5;
+  border-color: #20364a;
+}
+.shell:has(.company-dashboard) > .sidebar nav a:hover {
+  background: #183149;
+}
+.shell:has(.company-dashboard) > .sidebar .cd-nav-label {
+  color: #9fb9d3;
+}
+.sidebar {
+  overflow-y: auto;
+  gap: 18px;
+}
+.sidebar nav a {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.company-panel-link {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.cd-preview {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #061422;
+  min-height: 100vh;
+}
+@media (max-width: 1100px) {
+  .cd-chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .cd-composition {
+    max-width: 650px;
+  }
+  .cd-composition svg {
+    max-width: 260px;
+  }
+}
+@media (max-width: 700px) {
+  .company-dashboard {
+    padding: 18px 12px;
+    margin: 0 -8px;
+  }
+  .cd-panel {
+    padding: 18px 12px;
+  }
+  .cd-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .cd-empty-chart {
+    inset: 20px 20px 30px;
+  }
+  .cd-empty-chart strong {
+    font-size: 13px;
+  }
+  .cd-legend {
+    gap: 10px;
+  }
+  .sidebar .cd-nav-label {
+    align-self: center;
+  }
+  .cd-profile {
+    font-size: 12px;
+  }
+  .cd-chart-wrap {
+    min-height: 230px;
+  }
+  .cd-chart-wrap svg {
+    min-height: 230px;
+  }
+  .cd-panel header {
+    flex-wrap: wrap;
+  }
+}
