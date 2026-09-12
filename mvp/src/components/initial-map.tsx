@@ -1,6 +1,7 @@
 import { type V3Answer, v3Questions } from '@/lib/diagnostic-v3';
 import { answerStatus, buildInitialMap, displayV3Answer } from '@/lib/initial-map';
 import { IndicatorDataForm } from '@/components/indicator-data-form';
+import { IndicatorFileForm } from '@/components/indicator-file-form';
 
 const perceptionText: Record<string, string> = {
   Verde: 'Na sua percepção, está funcionando bem.',
@@ -19,6 +20,7 @@ type DataPoint = {
   period_label: string | null;
   status: string;
   validated_at: string | null;
+  storage_path: string | null;
 };
 
 function PerceptionChart({ radar }: { radar: Array<{ label: string; perception: string }> }) {
@@ -33,26 +35,46 @@ function PerceptionChart({ radar }: { radar: Array<{ label: string; perception: 
   </section>;
 }
 
-function StatusSummary({ declared, received, missing }: { declared: number; received: number; missing: number }) {
-  const total = declared + received + missing;
+function StatusSummary({ declared, files, received, missing }: { declared: number; files: number; received: number; missing: number }) {
+  const total = declared + files + received + missing;
   return <section className="panel stack">
     <p className="eyebrow">3 · O QUE JÁ TEMOS</p>
     <h3>{received} de {total || 0} informações importantes já têm valor recebido</h3>
     <div className="grid-2">
       <div className="panel"><strong>Valor recebido</strong><p>{received}</p><p className="caption">O valor chegou ao DuoMente, mas ainda pode precisar de validação.</p></div>
+      <div className="panel"><strong>Arquivo recebido</strong><p>{files}</p><p className="caption">O arquivo chegou, mas ainda precisamos ler e extrair os números.</p></div>
       <div className="panel"><strong>Só fonte declarada</strong><p>{declared}</p><p className="caption">Você disse que acompanha, mas o valor ainda não foi enviado.</p></div>
       <div className="panel"><strong>Sem fonte</strong><p>{missing}</p><p className="caption">Ainda precisamos descobrir de onde virá.</p></div>
     </div>
   </section>;
 }
 
+function bestPoint(points: DataPoint[]) {
+  return [...points].sort((a, b) => {
+    const rank = (p: DataPoint) => p.status === 'validated' ? 3 : p.value_text ? 2 : p.source_type === 'file' ? 1 : 0;
+    return rank(b) - rank(a);
+  })[0];
+}
+
 export function InitialMap({ answers, sessionId, readOnly, dataPoints }: { answers: V3Answer[]; sessionId: string; readOnly: boolean; dataPoints: DataPoint[] }) {
   const map = buildInitialMap(answers);
-  const pointByKey = new Map<string, DataPoint>();
-  for (const point of dataPoints) if (!pointByKey.has(point.indicator_key)) pointByKey.set(point.indicator_key, point);
-  const received = map.indicators.filter((i) => pointByKey.has(i.key)).length;
-  const declared = map.indicators.filter((i) => !pointByKey.has(i.key) && i.status === 'Fonte declarada — valor não recebido').length;
-  const missing = map.indicators.filter((i) => !pointByKey.has(i.key) && i.status === 'Sem fonte declarada').length;
+  const pointsByKey = new Map<string, DataPoint[]>();
+  for (const point of dataPoints) pointsByKey.set(point.indicator_key, [...(pointsByKey.get(point.indicator_key) ?? []), point]);
+
+  const states = map.indicators.map((i) => {
+    const points = pointsByKey.get(i.key) ?? [];
+    const point = bestPoint(points);
+    if (point?.status === 'validated') return { key: i.key, state: 'validated' as const, point };
+    if (point?.value_text) return { key: i.key, state: 'received' as const, point };
+    if (points.some((p) => p.source_type === 'file')) return { key: i.key, state: 'file' as const, point: points.find((p) => p.source_type === 'file')! };
+    if (i.status === 'Fonte declarada — valor não recebido') return { key: i.key, state: 'declared' as const, point: undefined };
+    return { key: i.key, state: 'missing' as const, point: undefined };
+  });
+
+  const received = states.filter((s) => s.state === 'received' || s.state === 'validated').length;
+  const files = states.filter((s) => s.state === 'file').length;
+  const declared = states.filter((s) => s.state === 'declared').length;
+  const missing = states.filter((s) => s.state === 'missing').length;
   const missingLabel = missing === 1 ? 'informação importante' : 'informações importantes';
 
   return <section className="stack"><section className="panel stack">
@@ -64,22 +86,25 @@ export function InitialMap({ answers, sessionId, readOnly, dataPoints }: { answe
 
     <section className="panel"><p className="eyebrow">2 · O QUE VOCÊ NOS CONTOU</p><h3>O cenário que vamos investigar</h3><p><strong>Situação:</strong> {map.text('v3_p2_example')}</p><p><strong>Impacto:</strong> {map.text('v3_p3_impact')}</p><p><strong>Fonte disponível:</strong> {map.text('v3_p9_evidence')}</p></section>
 
-    <StatusSummary declared={declared} received={received} missing={missing} />
+    <StatusSummary declared={declared} files={files} received={received} missing={missing} />
 
-    <section><p className="eyebrow">4 · OS NÚMEROS QUE VÃO NOS AJUDAR</p><h3>Agora podemos começar a trazer os valores</h3><p className="muted">O DuoMente escolheu estes números porque eles ajudam a responder se você está avançando em direção à sua meta.</p>
+    <section><p className="eyebrow">4 · OS NÚMEROS QUE VÃO NOS AJUDAR</p><h3>Agora podemos começar a trazer os valores</h3><p className="muted">Você pode informar um valor conhecido ou enviar um arquivo. O DuoMente mantém separado o que foi apenas recebido do que já foi validado.</p>
       <div className="grid-2">{map.indicators.length ? map.indicators.map((i) => {
-        const point = pointByKey.get(i.key);
+        const state = states.find((s) => s.key === i.key)!;
+        const point = state.point;
+        const badge = state.state === 'validated' ? 'Validado' : state.state === 'received' ? 'Valor recebido · aguardando validação' : state.state === 'file' ? 'Arquivo recebido · aguardando leitura' : state.state === 'declared' ? 'Fonte declarada · valor ainda não recebido' : 'Precisamos descobrir a fonte';
         return <article className="panel stack" key={i.key}>
-          <span className="badge">{point ? (point.status === 'validated' ? 'Validado' : 'Valor recebido · aguardando validação') : i.status === 'Sem fonte declarada' ? 'Precisamos descobrir a fonte' : 'Fonte declarada · valor ainda não recebido'}</span>
+          <span className="badge">{badge}</span>
           <h4>{i.name}</h4><p>{i.why}</p>
-          {point ? <div><p><strong>Valor recebido:</strong> {point.value_text}</p><p><strong>Período:</strong> {point.period_label}</p><p className="caption">Origem: {point.source_label ?? point.source_type}</p></div> : <><p className="caption">Onde podemos buscar: {i.source}</p>{!readOnly && <IndicatorDataForm sessionId={sessionId} indicatorKey={i.key} label={i.name} />}</>}
+          {state.state === 'received' || state.state === 'validated' ? <div><p><strong>Valor recebido:</strong> {point?.value_text}</p><p><strong>Período:</strong> {point?.period_label}</p><p className="caption">Origem: {point?.source_label ?? point?.source_type}</p></div> : state.state === 'file' ? <div><p><strong>Arquivo:</strong> {point?.source_label}</p><p><strong>Período:</strong> {point?.period_label}</p><p className="caption">O arquivo foi armazenado com segurança. O conteúdo ainda não foi transformado em valor do indicador.</p></div> : <p className="caption">Onde podemos buscar: {i.source}</p>}
+          {!readOnly && state.state !== 'validated' && <div className="row"><IndicatorDataForm sessionId={sessionId} indicatorKey={i.key} label={i.name} /><IndicatorFileForm sessionId={sessionId} indicatorKey={i.key} /></div>}
         </article>;
       }) : <p>Precisamos esclarecer melhor seu objetivo antes de escolher os números mais importantes.</p>}</div>
     </section>
 
     <section className="panel"><p className="eyebrow">5 · PRÓXIMO PASSO</p><h3>Agora vamos transformar percepção em dados.</h3>
-      {missing > 0 ? <p>{missing === 1 ? 'Existe' : 'Existem'} {missing} {missingLabel} ainda sem uma fonte declarada. Você já pode informar manualmente um valor conhecido; depois adicionaremos envio de arquivo e conexões automáticas.</p> : received < map.indicators.length ? <p>Já sabemos onde buscar os principais números. Agora precisamos receber os valores que faltam antes de usá-los em decisões.</p> : <p>Os principais valores identificados já foram recebidos. O próximo passo será validar esses dados antes de transformar isso em recomendação.</p>}
-      <p><strong>Regra:</strong> valor recebido não significa valor validado. O DuoMente mantém essa diferença visível para evitar decisões sobre dados incertos.</p>
+      {files > 0 ? <p>Já recebemos {files} {files === 1 ? 'arquivo' : 'arquivos'}. O próximo passo é ler o conteúdo, identificar os valores ligados aos indicadores e pedir sua confirmação antes de validar.</p> : missing > 0 ? <p>{missing === 1 ? 'Existe' : 'Existem'} {missing} {missingLabel} ainda sem uma fonte declarada. Você pode informar um valor ou enviar um arquivo que contenha essa informação.</p> : received < map.indicators.length ? <p>Já sabemos onde buscar os principais números. Agora precisamos receber os valores que faltam antes de usá-los em decisões.</p> : <p>Os principais valores identificados já foram recebidos. O próximo passo será validar esses dados antes de transformar isso em recomendação.</p>}
+      <p><strong>Regra:</strong> arquivo recebido e valor recebido ainda não significam dado validado.</p>
     </section>
 
     {map.ambiguities.length > 0 && <section className="panel"><p className="eyebrow">PRECISAMOS CONFIRMAR</p><ul>{map.ambiguities.map((a) => <li key={a}>{a}</li>)}</ul></section>}
