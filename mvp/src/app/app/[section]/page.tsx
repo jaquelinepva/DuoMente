@@ -96,6 +96,9 @@ export default async function Page({
           <h1>{organization?.name}</h1>
           <p>{organization?.industry}</p>
         </div>
+        <Link className="button company-panel-link" href="/app/painel">
+          Abrir painel da empresa →
+        </Link>
         {readOnly ? (
           <div className="panel">
             {Object.entries(business?.details ?? {}).map(([k, v]) => (
